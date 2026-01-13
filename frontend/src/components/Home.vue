@@ -1,22 +1,20 @@
 <script setup>
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 
+const router = useRouter()
 const age = ref(4)
 const file = ref(null)
 const previewUrl = ref(null)
 const isSubmitting = ref(false)
 
-// Handle file selection & preview generation
 const handleFileChange = (event) => {
   const selected = event.target.files[0]
   if (!selected) return
-
   file.value = selected
-  // Create a local URL for preview
   previewUrl.value = URL.createObjectURL(selected)
 }
 
-// Mock Submit Handler
 const handleSubmit = async () => {
   if (!file.value) return alert("Please select a photo first!")
 
@@ -25,20 +23,24 @@ const handleSubmit = async () => {
   try {
     const formData = new FormData()
     formData.append('file', file.value)
-    formData.append('age', age.value)
+    formData.append('age', age.value.toString())
 
-    // TODO: Replace with your actual FastAPI endpoint
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
-    console.log(`Submitting to ${apiUrl}/scan...`)
+    const apiUrl = import.meta.env.GPD_API_URL || 'http://localhost:8000'
+    const response = await fetch(`${apiUrl}/api/scan`, {
+      method: 'POST',
+      body: formData,
+    })
 
-    // Simulate network delay for effect
-    await new Promise(r => setTimeout(r, 2000))
+    if (!response.ok) {
+      throw new Error(`Upload failed: ${response.statusText}`)
+    }
 
-    alert("Simulation: Upload complete! (Backend not connected yet)")
+    const data = await response.json()
+    router.push(`/scan/${data.scan_id}`)
 
   } catch (e) {
     console.error(e)
-    alert("Error uploading scan")
+    alert("Error uploading scan. Is the backend running?")
   } finally {
     isSubmitting.value = false
   }
