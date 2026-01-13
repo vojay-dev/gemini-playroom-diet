@@ -2,12 +2,17 @@ import json
 import os
 from airflow.configuration import AIRFLOW_HOME
 from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
-from airflow.sdk import dag, task, chain
+from airflow.sdk import dag, task
 from airflow_ai_sdk import BaseModel
 import httpx
+from supabase import create_client
 from pydantic_ai import BinaryContent
 
 _POSTGRES_CONN_ID = "postgres_playroom_diet"
+
+
+supabase_project_url = os.getenv("SUPABASE_PROJECT_URL")
+supabase_secret_key = os.getenv("SUPABASE_SECRET_KEY")
 
 
 class Toy(BaseModel):
@@ -32,7 +37,7 @@ class ToyRecommendation(BaseModel):
     amazon_search: str
 
 def get_image_bytes(image_path: str) -> bytes:
-    image_url = f"{os.getenv('SUPABASE_PROJECT_URL')}/storage/v1/object/public/playroom-images/{image_path}"
+    image_url = f"{supabase_project_url}/storage/v1/object/public/playroom-images/{image_path}"
     with httpx.Client() as client:
         response = client.get(image_url)
         response.raise_for_status()
@@ -151,6 +156,31 @@ def process_scans():
         toy_inventory=toy_inventories,
         analysis_result=analysis_results,
         toy_recommendation=recommendations
+    )
+
+    @task
+    def save_result(
+        analysis_result: dict,
+        toy_recommendation: dict,
+        scan_record: tuple
+    ):
+        scan_id = str(scan_record[0])
+
+        payload = {
+            "analysis_result": json.dumps(analysis_result),
+            "toy_recommendation": json.dumps(toy_recommendation)
+        }
+        supabase = create_client(supabase_project_url, supabase_secret_key)
+
+        supabase.table("scans").update({
+            "status": "done",
+            "results_json": payload
+        }).eq("id", scan_id).execute()
+
+    save_result.expand(
+        analysis_result=analysis_results,
+        toy_recommendation=recommendations,
+        scan_record=_get_new_scans.output
     )
 
 process_scans()
