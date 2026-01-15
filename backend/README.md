@@ -1,5 +1,13 @@
 # Gemini Playroom Diet - Backend
 
+## Setup
+
+```sh
+uv sync
+```
+
+Copy `.env.dist` to `.env` and fill out connection details.
+
 ## How to run
 
 ```sh
@@ -16,8 +24,8 @@ create table public.scans (
   created_at timestamptz not null default now(),
   child_age int not null,
   image_path text not null,
-  status text not null default 'processing', 
-  results_json jsonb 
+  status text not null default 'processing',
+  results_json jsonb
 );
 
 alter table public.scans enable row level security;
