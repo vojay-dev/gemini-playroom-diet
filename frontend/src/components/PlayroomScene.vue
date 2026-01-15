@@ -423,5 +423,10 @@ onUnmounted(() => {
   position: absolute;
   inset: 0;
   z-index: 0;
+  pointer-events: none;
+}
+
+.playroom-canvas :deep(canvas) {
+  pointer-events: none;
 }
 </style>

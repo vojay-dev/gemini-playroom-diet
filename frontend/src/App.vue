@@ -25,9 +25,9 @@ onMounted(() => {
   <div class="playroom-wall fixed inset-0 z-0"></div>
 
   <!-- Global 3D Background -->
-  <PlayroomScene class="!fixed inset-0 z-[1]" />
+  <PlayroomScene class="!fixed inset-0 z-[1] pointer-events-none" />
 
-  <header class="relative z-10">
+  <header class="relative z-20">
     <div class="navbar bg-base-300/30 backdrop-blur-md border-b border-white/10">
       <div class="navbar-start">
         <div class="dropdown">
@@ -36,7 +36,7 @@ onMounted(() => {
           </div>
           <ul
             tabindex="-1"
-            class="menu menu-md dropdown-content bg-base-100 rounded-box z-1 mt-3 w-52 p-2 shadow">
+            class="menu menu-md dropdown-content bg-base-100 rounded-box z-50 mt-3 w-52 p-2 shadow">
             <li><RouterLink to="/" v-bind:class="{ 'menu-active': $route.fullPath === '/' }">Home</RouterLink></li>
             <li><RouterLink to="/about" v-bind:class="{ 'menu-active': $route.fullPath === '/about' }">About</RouterLink></li>
           </ul>

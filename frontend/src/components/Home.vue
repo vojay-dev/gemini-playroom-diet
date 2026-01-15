@@ -48,7 +48,7 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <div class="hero min-h-screen overflow-hidden relative">
+  <div class="hero h-[calc(100vh-68px)] overflow-hidden relative">
 
     <div class="hero-content flex-col lg:flex-row-reverse lg:items-stretch gap-8 relative z-10">
 
