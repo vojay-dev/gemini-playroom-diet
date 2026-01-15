@@ -1,9 +1,34 @@
 <script setup>
+import { ref, onMounted } from 'vue'
+import PlayroomScene from './components/PlayroomScene.vue'
+
+const isNightTheme = ref(true)
+
+const toggleTheme = () => {
+  isNightTheme.value = !isNightTheme.value
+  const newTheme = isNightTheme.value ? 'night' : 'dracula'
+  document.documentElement.setAttribute('data-theme', newTheme)
+  localStorage.setItem('theme', newTheme)
+}
+
+onMounted(() => {
+  const savedTheme = localStorage.getItem('theme')
+  if (savedTheme === 'dracula') {
+    isNightTheme.value = false
+    document.documentElement.setAttribute('data-theme', 'dracula')
+  }
+})
 </script>
 
 <template>
-  <header>
-    <div class="navbar bg-base-100 shadow-sm">
+  <!-- Playroom Wall Pattern Background -->
+  <div class="playroom-wall fixed inset-0 z-0"></div>
+
+  <!-- Global 3D Background -->
+  <PlayroomScene class="!fixed inset-0 z-[1]" />
+
+  <header class="relative z-10">
+    <div class="navbar bg-base-300/30 backdrop-blur-md border-b border-white/10">
       <div class="navbar-start">
         <div class="dropdown">
           <div tabindex="0" role="button" class="btn btn-ghost btn-circle">
@@ -21,22 +46,32 @@
         <a class="btn btn-ghost text-xl">Gemini Playroom Diet</a>
       </div>
       <div class="navbar-end">
-        <button class="btn btn-ghost btn-circle">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /> </svg>
-        </button>
-        <button class="btn btn-ghost btn-circle">
-          <div class="indicator">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /> </svg>
-            <span class="badge badge-xs badge-primary indicator-item"></span>
-          </div>
-        </button>
+        <!-- Theme Toggle: Boy (night) / Girl (dracula) -->
+        <label class="swap swap-rotate btn btn-ghost btn-circle" @click="toggleTheme">
+          <!-- Boy icon (night theme) -->
+          <svg
+            :class="isNightTheme ? 'swap-off' : 'swap-on'"
+            class="h-6 w-6 fill-current"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24">
+            <path d="M12 2C9.24 2 7 4.24 7 7s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zm0 8c-1.65 0-3-1.35-3-3s1.35-3 3-3 3 1.35 3 3-1.35 3-3 3zm0 4c-4.42 0-8 1.79-8 4v2h16v-2c0-2.21-3.58-4-8-4z"/>
+          </svg>
+          <!-- Girl icon (dracula theme) -->
+          <svg
+            :class="isNightTheme ? 'swap-on' : 'swap-off'"
+            class="h-6 w-6 fill-current"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24">
+            <path d="M12 2C9.24 2 7 4.24 7 7c0 1.64.8 3.09 2.03 4H7l-1 8h2l.5-4h7l.5 4h2l-1-8h-2.03c1.23-.91 2.03-2.36 2.03-4 0-2.76-2.24-5-5-5zm0 2c1.65 0 3 1.35 3 3s-1.35 3-3 3-3-1.35-3-3 1.35-3 3-3zm-2.5 9h5l.25 2h-5.5l.25-2z"/>
+          </svg>
+        </label>
       </div>
     </div>
   </header>
-  <main>
+  <main class="relative z-10">
     <RouterView />
   </main>
-  <footer class="footer footer-center p-1 px-2 bg-base-100 bg-opacity-60 text-neutral-content fixed bottom-0 z-50 backdrop-blur">
+  <footer class="footer footer-center p-1 px-2 text-neutral-content fixed bottom-0 z-50 bg-base-300/30 backdrop-blur-md border-t border-white/10">
     <aside class="items-center grid-flow-col">
       <p>© 2026 Volker Janz</p>
       <nav class="grid-flow-col gap-1 md:place-self-center md:justify-self-end">
@@ -55,4 +90,43 @@
 </template>
 
 <style scoped>
+/* Playroom - soft colorful confetti/sprinkles pattern */
+.playroom-wall {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #1a1a2e 100%);
+  background-attachment: fixed;
+}
+
+.playroom-wall::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    /* Yellow stars */
+    radial-gradient(circle at 10% 20%, #f1c40f 3px, transparent 3px),
+    radial-gradient(circle at 85% 15%, #f1c40f 2px, transparent 2px),
+    radial-gradient(circle at 45% 80%, #f1c40f 2.5px, transparent 2.5px),
+    radial-gradient(circle at 70% 60%, #f1c40f 2px, transparent 2px),
+    /* Pink circles */
+    radial-gradient(circle at 20% 70%, #e91e63 4px, transparent 4px),
+    radial-gradient(circle at 90% 45%, #e91e63 3px, transparent 3px),
+    radial-gradient(circle at 55% 25%, #e91e63 2.5px, transparent 2.5px),
+    /* Cyan dots */
+    radial-gradient(circle at 30% 40%, #00bcd4 3px, transparent 3px),
+    radial-gradient(circle at 75% 85%, #00bcd4 2.5px, transparent 2.5px),
+    radial-gradient(circle at 15% 90%, #00bcd4 2px, transparent 2px),
+    /* Green dots */
+    radial-gradient(circle at 60% 50%, #2ecc71 3px, transparent 3px),
+    radial-gradient(circle at 5% 55%, #2ecc71 2px, transparent 2px),
+    radial-gradient(circle at 95% 75%, #2ecc71 2.5px, transparent 2.5px),
+    /* Orange dots */
+    radial-gradient(circle at 40% 10%, #e67e22 2.5px, transparent 2.5px),
+    radial-gradient(circle at 80% 30%, #e67e22 3px, transparent 3px),
+    radial-gradient(circle at 25% 95%, #e67e22 2px, transparent 2px),
+    /* Purple dots */
+    radial-gradient(circle at 50% 65%, #9b59b6 2.5px, transparent 2.5px),
+    radial-gradient(circle at 65% 5%, #9b59b6 2px, transparent 2px),
+    radial-gradient(circle at 35% 55%, #9b59b6 3px, transparent 3px);
+  background-size: 400px 400px;
+  opacity: 0.6;
+}
 </style>

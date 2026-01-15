@@ -48,13 +48,14 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <div class="hero h-[calc(100vh-68px)] bg-base-200">
-    <div class="hero-content flex-col lg:flex-row-reverse gap-8">
+  <div class="hero min-h-screen overflow-hidden relative">
 
-      <!-- Text Section -->
-      <div class="text-center lg:text-left max-w-md">
-        <h1 class="text-5xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-          The Playroom Diet
+    <div class="hero-content flex-col lg:flex-row-reverse lg:items-stretch gap-8 relative z-10">
+
+      <!-- Text Section with glass card -->
+      <div class="bg-base-300/30 backdrop-blur-md border border-white/10 p-8 rounded-2xl text-center lg:text-left w-full max-w-md flex flex-col justify-start">
+        <h1 class="text-5xl font-semibold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent" style="font-family: 'Fredoka', sans-serif;">
+          Playroom Diet
         </h1>
         <p class="py-6 text-lg">
           Turn your chaotic toy pile into a
@@ -63,15 +64,15 @@ const handleSubmit = async () => {
         </p>
 
         <!-- Trust Indicators -->
-        <div class="flex gap-4 justify-center lg:justify-start">
+        <div class="flex gap-4 flex-wrap justify-center lg:justify-start">
           <div class="badge badge-outline">🧠 Gemini 3</div>
           <div class="badge badge-outline">✨ Gemini 3 Vision</div>
           <div class="badge badge-outline">🧬 O*NET Data</div>
         </div>
       </div>
 
-      <!-- The Form Card -->
-      <div class="card shrink-0 w-full max-w-sm shadow-2xl bg-base-100 border border-base-300">
+      <!-- The Form Card (glassmorphism) -->
+      <div class="card w-full max-w-md bg-base-300/30 backdrop-blur-md border border-white/10 rounded-2xl">
         <form class="card-body" @submit.prevent="handleSubmit">
 
           <!-- Age Input -->
@@ -141,3 +142,6 @@ const handleSubmit = async () => {
     </div>
   </div>
 </template>
+
+<style scoped>
+</style>
