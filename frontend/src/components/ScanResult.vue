@@ -1,6 +1,8 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
+import SkillRadar from './SkillRadar.vue'
+import ShareCard from './ShareCard.vue'
 
 const route = useRoute()
 const scanId = route.params.id
@@ -9,12 +11,31 @@ const status = ref('loading')
 const result = ref(null)
 const error = ref(null)
 const expandedItem = ref(0) // Which roadmap item is expanded
+const showShareModal = ref(false)
 let pollInterval = null
 
 // New structure: result is already parsed, no nested JSON
 const roadmap = computed(() => result.value?.roadmap || [])
 const skillScores = computed(() => result.value?.skill_scores || {})
 const statusQuo = computed(() => result.value?.status_quo || '')
+
+// Calculate projected scores after completing roadmap
+const projectedScores = computed(() => {
+  if (!skillScores.value || !roadmap.value.length) return null
+
+  const projected = { ...skillScores.value }
+
+  // Each roadmap item improves its target category
+  roadmap.value.forEach(item => {
+    const category = item.skill_category
+    if (category && projected[category] !== undefined) {
+      // Improve by 15-20 points, capped at 95
+      projected[category] = Math.min(95, projected[category] + 15 + Math.floor(Math.random() * 5))
+    }
+  })
+
+  return projected
+})
 
 const timeframeLabels = {
   'now': { label: 'Start Now', icon: '🎯', color: 'primary' },
@@ -81,7 +102,8 @@ onUnmounted(() => {
 
 <template>
   <div class="min-h-[calc(100vh-68px)] flex items-start justify-center p-4 py-8">
-    <div class="w-full max-w-2xl space-y-4">
+    <!-- Single column for loading/processing/error states -->
+    <div v-if="status !== 'done' || !roadmap.length" class="w-full max-w-2xl space-y-4">
 
       <!-- Loading State -->
       <div v-if="status === 'loading'" class="card bg-base-300/30 backdrop-blur-md border border-white/10 rounded-2xl">
@@ -107,22 +129,58 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <!-- Done State -->
-      <template v-else-if="status === 'done' && roadmap.length">
-
-        <!-- Header Card -->
-        <div class="card bg-gradient-to-br from-primary/20 to-secondary/20 backdrop-blur-md border border-white/10 rounded-2xl">
-          <div class="card-body text-center">
-            <div class="text-5xl mb-2">🗺️</div>
-            <h1 class="text-2xl md:text-3xl font-bold" style="font-family: 'Fredoka', sans-serif;">
-              Your Development Roadmap
-            </h1>
-            <p class="opacity-70 mt-2">A personalized 6-month plan for your child's growth</p>
+      <!-- Fallback: Raw JSON if structure is unexpected -->
+      <div v-else-if="status === 'done'" class="card bg-base-300/30 backdrop-blur-md border border-white/10 rounded-2xl">
+        <div class="card-body">
+          <h2 class="text-2xl font-semibold text-success mb-4">Analysis Complete</h2>
+          <div class="bg-base-100/50 rounded-lg p-4 overflow-auto max-h-96">
+            <pre class="text-sm whitespace-pre-wrap">{{ JSON.stringify(result, null, 2) }}</pre>
           </div>
+          <RouterLink to="/" class="btn btn-primary mt-4">Back to Home</RouterLink>
         </div>
+      </div>
 
-        <!-- Roadmap Timeline -->
-        <div class="space-y-4">
+      <!-- Not Found State -->
+      <div v-else-if="status === 'not_found'" class="card bg-base-300/30 backdrop-blur-md border border-white/10 rounded-2xl">
+        <div class="card-body text-center py-12">
+          <div class="text-6xl mb-4">🔍</div>
+          <h2 class="text-2xl font-semibold text-error">Scan Not Found</h2>
+          <p class="mt-2 opacity-70">The scan ID doesn't exist or has expired.</p>
+          <p class="mt-4 font-mono text-xs opacity-40">ID: {{ scanId }}</p>
+          <RouterLink to="/" class="btn btn-primary mt-6">Back to Home</RouterLink>
+        </div>
+      </div>
+
+      <!-- Error State -->
+      <div v-else-if="status === 'error'" class="card bg-base-300/30 backdrop-blur-md border border-white/10 rounded-2xl">
+        <div class="card-body text-center py-12">
+          <div class="text-6xl mb-4">⚠️</div>
+          <h2 class="text-2xl font-semibold text-error">Something went wrong</h2>
+          <p class="mt-2 opacity-70">{{ error }}</p>
+          <RouterLink to="/" class="btn btn-primary mt-6">Back to Home</RouterLink>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Two-column layout for results -->
+    <div v-else class="w-full max-w-6xl">
+      <!-- Header Card (full width) -->
+      <div class="card bg-gradient-to-br from-primary/20 to-secondary/20 backdrop-blur-md border border-white/10 rounded-2xl mb-6">
+        <div class="card-body text-center">
+          <div class="text-5xl mb-2">🗺️</div>
+          <h1 class="text-2xl md:text-3xl font-bold" style="font-family: 'Fredoka', sans-serif;">
+            Your Development Roadmap
+          </h1>
+          <p class="opacity-70 mt-2">A personalized 6-month plan for your child's growth</p>
+        </div>
+      </div>
+
+      <!-- Two Column Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+
+        <!-- Left Column: Roadmap Timeline (3/5 width on desktop) -->
+        <div class="lg:col-span-3 space-y-4">
           <div
             v-for="(item, index) in roadmap"
             :key="item.timeframe"
@@ -233,61 +291,102 @@ onUnmounted(() => {
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- Current Status Section -->
-        <div class="collapse collapse-arrow bg-base-300/30 backdrop-blur-md border border-white/10 rounded-2xl">
-          <input type="checkbox" />
-          <div class="collapse-title text-lg font-semibold flex items-center gap-2">
-            <span>📊</span> Current Playroom Analysis
+          <!-- Current Status Section -->
+          <div class="collapse collapse-arrow bg-base-300/30 backdrop-blur-md border border-white/10 rounded-2xl">
+            <input type="checkbox" />
+            <div class="collapse-title text-lg font-semibold flex items-center gap-2">
+              <span>📊</span> Current Playroom Analysis
+            </div>
+            <div class="collapse-content">
+              <p class="text-base-content/80 leading-relaxed">{{ statusQuo }}</p>
+            </div>
           </div>
-          <div class="collapse-content">
-            <p class="text-base-content/80 leading-relaxed">{{ statusQuo }}</p>
+        </div>
+
+        <!-- Right Column: Radar Chart & Actions (2/5 width on desktop) -->
+        <div class="lg:col-span-2 space-y-4">
+          <!-- Skill Radar Chart -->
+          <div class="card bg-base-300/30 backdrop-blur-md border border-white/10 rounded-2xl">
+            <div class="card-body">
+              <h2 class="text-lg font-semibold flex items-center gap-2 mb-2">
+                <span>📈</span> Skill Development
+              </h2>
+              <SkillRadar
+                :scores="skillScores"
+                :projected-scores="projectedScores"
+              />
+              <p class="text-xs text-center opacity-50 mt-2">
+                Dashed line shows projected improvement after completing the roadmap
+              </p>
+            </div>
+          </div>
+
+          <!-- Quick Stats -->
+          <div class="card bg-base-300/30 backdrop-blur-md border border-white/10 rounded-2xl">
+            <div class="card-body">
+              <h2 class="text-lg font-semibold flex items-center gap-2 mb-4">
+                <span>✨</span> Quick Stats
+              </h2>
+              <div class="grid grid-cols-2 gap-3">
+                <div class="text-center p-3 rounded-xl bg-base-100/30">
+                  <div class="text-2xl font-bold text-primary">{{ roadmap.length }}</div>
+                  <div class="text-xs opacity-70">Toys Recommended</div>
+                </div>
+                <div class="text-center p-3 rounded-xl bg-base-100/30">
+                  <div class="text-2xl font-bold text-secondary">6</div>
+                  <div class="text-xs opacity-70">Skills Analyzed</div>
+                </div>
+                <div class="text-center p-3 rounded-xl bg-base-100/30">
+                  <div class="text-2xl font-bold text-accent">6mo</div>
+                  <div class="text-xs opacity-70">Roadmap Duration</div>
+                </div>
+                <div class="text-center p-3 rounded-xl bg-base-100/30">
+                  <div class="text-2xl font-bold text-success">
+                    {{ roadmap.filter(r => r.decision === 'APPROVED').length }}/{{ roadmap.length }}
+                  </div>
+                  <div class="text-xs opacity-70">Safety Approved</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Share Card -->
+          <div class="card bg-gradient-to-br from-secondary/20 to-accent/20 backdrop-blur-md border border-white/10 rounded-2xl">
+            <div class="card-body text-center">
+              <h2 class="text-lg font-semibold">Share Your Results</h2>
+              <p class="text-sm opacity-70 mb-4">Generate a shareable image of your roadmap!</p>
+              <button @click="showShareModal = true" class="btn btn-secondary gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                </svg>
+                Share Results
+              </button>
+            </div>
           </div>
         </div>
 
-        <!-- Scan Again -->
-        <div class="text-center pt-4">
-          <RouterLink to="/" class="btn btn-ghost btn-sm opacity-70">
-            ← Scan Another Room
-          </RouterLink>
-          <p class="font-mono text-xs opacity-30 mt-2">ID: {{ scanId }}</p>
-        </div>
-
-      </template>
-
-      <!-- Fallback: Raw JSON if structure is unexpected -->
-      <div v-else-if="status === 'done'" class="card bg-base-300/30 backdrop-blur-md border border-white/10 rounded-2xl">
-        <div class="card-body">
-          <h2 class="text-2xl font-semibold text-success mb-4">Analysis Complete</h2>
-          <div class="bg-base-100/50 rounded-lg p-4 overflow-auto max-h-96">
-            <pre class="text-sm whitespace-pre-wrap">{{ JSON.stringify(result, null, 2) }}</pre>
-          </div>
-          <RouterLink to="/" class="btn btn-primary mt-4">Back to Home</RouterLink>
-        </div>
       </div>
 
-      <!-- Not Found State -->
-      <div v-else-if="status === 'not_found'" class="card bg-base-300/30 backdrop-blur-md border border-white/10 rounded-2xl">
-        <div class="card-body text-center py-12">
-          <div class="text-6xl mb-4">🔍</div>
-          <h2 class="text-2xl font-semibold text-error">Scan Not Found</h2>
-          <p class="mt-2 opacity-70">The scan ID doesn't exist or has expired.</p>
-          <p class="mt-4 font-mono text-xs opacity-40">ID: {{ scanId }}</p>
-          <RouterLink to="/" class="btn btn-primary mt-6">Back to Home</RouterLink>
-        </div>
+      <!-- Full-width footer section -->
+      <div class="mt-6 mb-12 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-base-300/20 backdrop-blur-sm border border-white/5">
+        <p class="font-mono text-xs opacity-40">Scan ID: {{ scanId }}</p>
+        <RouterLink to="/" class="btn btn-primary gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          Scan Another Room
+        </RouterLink>
       </div>
 
-      <!-- Error State -->
-      <div v-else-if="status === 'error'" class="card bg-base-300/30 backdrop-blur-md border border-white/10 rounded-2xl">
-        <div class="card-body text-center py-12">
-          <div class="text-6xl mb-4">⚠️</div>
-          <h2 class="text-2xl font-semibold text-error">Something went wrong</h2>
-          <p class="mt-2 opacity-70">{{ error }}</p>
-          <RouterLink to="/" class="btn btn-primary mt-6">Back to Home</RouterLink>
-        </div>
-      </div>
-
+      <!-- Share Modal -->
+      <ShareCard
+        v-if="showShareModal"
+        :roadmap="roadmap"
+        :skill-scores="skillScores"
+        @close="showShareModal = false"
+      />
     </div>
   </div>
 </template>
