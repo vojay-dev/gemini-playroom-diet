@@ -7,6 +7,7 @@ from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from storage3.types import FileOptions
 from supabase import create_client, Client
+from postgrest.exceptions import APIError
 
 from airflow import AirflowClient
 
@@ -49,6 +50,25 @@ app.add_middleware(
 @app.get("/")
 def health_check():
     return {"status": "ok", "service": "Gemini Playroom Diet Backend"}
+
+
+@app.get("/api/scan/{scan_id}")
+def get_scan(scan_id: str):
+    try:
+        result = supabase.table("scans").select("*").eq("id", scan_id).execute()
+    except APIError:
+        raise HTTPException(status_code=404, detail="Scan not found")
+
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Scan not found")
+
+    scan = result.data[0]
+
+    return {
+        "scan_id": scan_id,
+        "status": scan["status"],
+        "result": scan.get("results_json") if scan["status"] == "done" else None
+    }
 
 
 @app.post("/api/scan")
