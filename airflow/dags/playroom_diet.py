@@ -24,17 +24,37 @@ class Toy(BaseModel):
 class ToyInventory(BaseModel):
     items: list[Toy]
 
-class AnalysisResult(BaseModel):
-    status_quo: str
-    missing_skill: str
+class SkillScores(BaseModel):
+    cognitive: int  # 0-100: problem solving, reasoning, memory
+    motor_fine: int  # 0-100: finger dexterity, precision
+    motor_gross: int  # 0-100: coordination, balance, strength
+    social_emotional: int  # 0-100: empathy, cooperation, expression
+    creative: int  # 0-100: imagination, artistic, open-ended play
+    language: int  # 0-100: communication, vocabulary, storytelling
+
+class RoadmapItem(BaseModel):
+    timeframe: str  # "now", "3_months", "6_months"
+    priority: int  # 1, 2, or 3
+    missing_skill: str  # O*NET ability name
+    skill_id: str  # O*NET ID like "1.A.1.f.2"
+    skill_category: str  # One of: cognitive, motor_fine, motor_gross, social_emotional, creative, language
     recommended_toy: str
     reasoning: str
 
-class ToyRecommendation(BaseModel):
-    decision: str
+class AnalysisResult(BaseModel):
+    status_quo: str
+    skill_scores: SkillScores
+    roadmap: list[RoadmapItem]  # Exactly 3 items
+
+class ToyRecommendationItem(BaseModel):
+    timeframe: str
+    decision: str  # "APPROVED" or "SUBSTITUTED"
     recommended_toy: str
     safety_context: str
     amazon_search: str
+
+class ToyRecommendation(BaseModel):
+    items: list[ToyRecommendationItem]  # Exactly 3 items
 
 def get_image_bytes(image_path: str) -> bytes:
     image_url = f"{supabase_project_url}/storage/v1/object/public/playroom-images/{image_path}"
@@ -94,15 +114,28 @@ def process_scans():
             - Example: "Riding a Bike" = "Gross Body Coordination (1.A.3.c.3)".
 
             **Your task:**
-            1. **Audit:** Analyze the provided inventory. Identify which O*NET Ability clusters are heavily represented (e.g., "High Social Perceptiveness") and which are MISSING (e.g., "Zero Structural Visualization").
-            2. **Gap:** Identify the most critical developmental blind spot.
-            3. **Fix:** Recommend ONE toy that specifically trains the missing O*NET Ability.
+            1. **Audit:** Analyze the provided inventory and assess current skill development.
+            2. **Score:** Rate the child's current development in 6 categories (0-100 scale):
+               - cognitive: problem solving, reasoning, memory
+               - motor_fine: finger dexterity, precision, hand-eye coordination
+               - motor_gross: body coordination, balance, strength
+               - social_emotional: empathy, cooperation, emotional expression
+               - creative: imagination, artistic expression, open-ended play
+               - language: communication, vocabulary, storytelling
+            3. **Roadmap:** Create a 3-item development roadmap with priorities:
+               - Priority 1 (timeframe: "now"): Most critical gap to address immediately
+               - Priority 2 (timeframe: "3_months"): Second priority for near-term
+               - Priority 3 (timeframe: "6_months"): Third priority for longer-term growth
 
             **Requirements:**
             - In status_quo, summarize the dominant O*NET Ability clusters present.
-            - In missing_skill, specify the most critical missing O*NET Ability.
-            - In recommended_toy, suggest ONE toy that effectively trains the missing ability.
-            - In your reasoning, you MUST cite the specific O*NET Ability Name and ID Code (e.g. 'Deductive Reasoning 1.A.1.b.5') to justify your recommendation.
+            - In skill_scores, provide realistic scores based on the toy inventory analysis.
+            - In roadmap, provide exactly 3 items. Each must include:
+              - The specific O*NET Ability Name in missing_skill
+              - The O*NET ID Code in skill_id (e.g., "1.A.1.f.2")
+              - Which of the 6 categories it maps to in skill_category
+              - A specific toy recommendation in recommended_toy
+              - Scientific reasoning citing the O*NET ability
         """
     )
     def analyze_playroom(toy_inventory: dict):
@@ -116,27 +149,31 @@ def process_scans():
         system_prompt="""
             You are a dual-role agent: CPSC Safety Auditor and Personal Shopper.
 
-            **Input:** A 'recommended toy' and 'child age'.
+            **Input:** A development roadmap with 3 recommended toys and the child's age.
 
-            **Step 1: safety audit**
-            Check the toy against CPSC guidelines for the age.
-            - If safe: Keep the recommendation.
-            - If unsafe : You MUST select a safer alternative that achieves the same developmental goal.
+            **For EACH of the 3 toys in the roadmap:**
 
-            **Step 2: Shopping prep**
+            **Step 1: Safety Audit**
+            Check the toy against CPSC guidelines for the child's age.
+            - If safe: Keep the recommendation (decision: "APPROVED").
+            - If unsafe: Select a safer alternative that achieves the same developmental goal (decision: "SUBSTITUTED").
+
+            **Step 2: Shopping Prep**
             Generate a specific 'amazon_search' for the FINAL toy.
             - Include brand names if they matter for safety.
             - Exclude generic terms that lead to low-quality knock-offs.
 
             **Requirements:**
-            - Decison can be "APPROVED" or "SUBSTITUTED".
-            - Provide a clear 'safety_context' explaining your decision.
+            - Return exactly 3 items, one for each roadmap entry.
+            - Preserve the timeframe ("now", "3_months", "6_months") from the input.
+            - Decision must be "APPROVED" or "SUBSTITUTED".
+            - Provide a clear 'safety_context' explaining your decision for each toy.
         """
     )
     def safety_check(zipped_input: tuple):
         analysis_result, scan_record = zipped_input
         child_age = scan_record[2]
-        return json.dumps({**analysis_result, "child_age": child_age})
+        return json.dumps({"roadmap": analysis_result.get("roadmap", []), "child_age": child_age})
 
     zipped_input_safety = analysis_results.zip(_get_new_scans.output)
     recommendations = safety_check.expand(zipped_input=zipped_input_safety)
@@ -144,9 +181,20 @@ def process_scans():
     @task
     def print_result(zipped_input: tuple):
         toy_inventory, analysis_result, toy_recommendation = zipped_input
-        print("Toy Inventory:", json.dumps(toy_inventory, indent=2))
-        print("Analysis Result:", json.dumps(analysis_result, indent=2))
-        print("Toy Recommendation:", json.dumps(toy_recommendation, indent=2))
+        print("=" * 50)
+        print("TOY INVENTORY:")
+        print(json.dumps(toy_inventory, indent=2))
+        print("=" * 50)
+        print("SKILL SCORES:")
+        print(json.dumps(analysis_result.get("skill_scores", {}), indent=2))
+        print("=" * 50)
+        print("DEVELOPMENT ROADMAP:")
+        for item in analysis_result.get("roadmap", []):
+            print(f"  [{item.get('timeframe')}] {item.get('recommended_toy')} - {item.get('missing_skill')}")
+        print("=" * 50)
+        print("SAFETY RECOMMENDATIONS:")
+        for item in toy_recommendation.get("items", []):
+            print(f"  [{item.get('timeframe')}] {item.get('decision')}: {item.get('recommended_toy')}")
 
     zipped_input_print = toy_inventories.zip(analysis_results, recommendations)
     print_result.expand(zipped_input=zipped_input_print)
@@ -156,9 +204,26 @@ def process_scans():
         analysis_result, toy_recommendation, scan_record = zipped_input
         scan_id = str(scan_record[0])
 
+        # Merge roadmap with safety recommendations
+        roadmap_items = analysis_result.get("roadmap", [])
+        safety_items = toy_recommendation.get("items", [])
+
+        # Create merged roadmap with both analysis and safety info
+        merged_roadmap = []
+        for i, roadmap_item in enumerate(roadmap_items):
+            safety_item = safety_items[i] if i < len(safety_items) else {}
+            merged_roadmap.append({
+                **roadmap_item,
+                "decision": safety_item.get("decision", "APPROVED"),
+                "final_toy": safety_item.get("recommended_toy", roadmap_item.get("recommended_toy")),
+                "safety_context": safety_item.get("safety_context", ""),
+                "amazon_search": safety_item.get("amazon_search", "")
+            })
+
         payload = {
-            "analysis_result": json.dumps(analysis_result),
-            "toy_recommendation": json.dumps(toy_recommendation)
+            "status_quo": analysis_result.get("status_quo", ""),
+            "skill_scores": analysis_result.get("skill_scores", {}),
+            "roadmap": merged_roadmap
         }
         supabase = create_client(supabase_project_url, supabase_secret_key)
 

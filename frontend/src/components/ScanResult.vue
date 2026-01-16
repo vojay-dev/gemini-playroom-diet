@@ -8,33 +8,29 @@ const scanId = route.params.id
 const status = ref('loading')
 const result = ref(null)
 const error = ref(null)
+const expandedItem = ref(0) // Which roadmap item is expanded
 let pollInterval = null
 
-const parsedResult = computed(() => {
-  if (!result.value) return null
-  try {
-    const analysis = JSON.parse(result.value.analysis_result)
-    const recommendation = JSON.parse(result.value.toy_recommendation)
-    return { analysis, recommendation }
-  } catch (e) {
-    console.error('Failed to parse result:', e)
-    return null
-  }
-})
+// New structure: result is already parsed, no nested JSON
+const roadmap = computed(() => result.value?.roadmap || [])
+const skillScores = computed(() => result.value?.skill_scores || {})
+const statusQuo = computed(() => result.value?.status_quo || '')
 
-const searchQuery = computed(() => {
-  if (!parsedResult.value?.recommendation?.amazon_search) return null
-  return encodeURIComponent(parsedResult.value.recommendation.amazon_search)
-})
+const timeframeLabels = {
+  'now': { label: 'Start Now', icon: '🎯', color: 'primary' },
+  '3_months': { label: 'In 3 Months', icon: '📅', color: 'secondary' },
+  '6_months': { label: 'In 6 Months', icon: '🌟', color: 'accent' }
+}
 
-const retailers = computed(() => {
-  if (!searchQuery.value) return []
+const getRetailers = (amazonSearch) => {
+  if (!amazonSearch) return []
+  const query = encodeURIComponent(amazonSearch)
   return [
-    { name: 'Amazon', url: `https://www.amazon.com/s?k=${searchQuery.value}`, color: 'btn-warning' },
-    { name: 'Target', url: `https://www.target.com/s?searchTerm=${searchQuery.value}`, color: 'btn-error' },
-    { name: 'Walmart', url: `https://www.walmart.com/search?q=${searchQuery.value}`, color: 'btn-info' },
+    { name: 'Amazon', url: `https://www.amazon.com/s?k=${query}`, color: 'btn-warning' },
+    { name: 'Target', url: `https://www.target.com/s?searchTerm=${query}`, color: 'btn-error' },
+    { name: 'Walmart', url: `https://www.walmart.com/search?q=${query}`, color: 'btn-info' },
   ]
-})
+}
 
 const fetchScan = async () => {
   try {
@@ -97,7 +93,7 @@ onUnmounted(() => {
 
       <!-- Processing State -->
       <div v-else-if="status === 'processing'" class="card bg-base-300/30 backdrop-blur-md border border-white/10 rounded-2xl">
-        <div class="card-body text-center py-12">
+        <div class="card-body flex flex-col items-center text-center py-12">
           <span class="loading loading-dots loading-lg text-primary"></span>
           <h2 class="text-2xl font-semibold mt-4">Analyzing your playroom...</h2>
           <p class="mt-2 opacity-70">This may take a minute. We're using AI to analyze the toys.</p>
@@ -112,57 +108,130 @@ onUnmounted(() => {
       </div>
 
       <!-- Done State -->
-      <template v-else-if="status === 'done' && parsedResult">
+      <template v-else-if="status === 'done' && roadmap.length">
 
-        <!-- Hero Card: Recommendation -->
+        <!-- Header Card -->
         <div class="card bg-gradient-to-br from-primary/20 to-secondary/20 backdrop-blur-md border border-white/10 rounded-2xl">
           <div class="card-body text-center">
-            <div class="text-5xl mb-2">🧩</div>
-            <h2 class="text-xl font-semibold opacity-70">We recommend</h2>
-            <h1 class="text-2xl md:text-3xl font-bold text-primary" style="font-family: 'Fredoka', sans-serif;">
-              {{ parsedResult.recommendation.recommended_toy }}
+            <div class="text-5xl mb-2">🗺️</div>
+            <h1 class="text-2xl md:text-3xl font-bold" style="font-family: 'Fredoka', sans-serif;">
+              Your Development Roadmap
             </h1>
-
-            <!-- Retailer Buttons -->
-            <div v-if="retailers.length" class="flex flex-wrap justify-center gap-2 mt-4">
-              <a
-                v-for="retailer in retailers"
-                :key="retailer.name"
-                :href="retailer.url"
-                target="_blank"
-                rel="noopener noreferrer"
-                :class="['btn gap-2', retailer.color]"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-                {{ retailer.name }}
-              </a>
-            </div>
+            <p class="opacity-70 mt-2">A personalized 6-month plan for your child's growth</p>
           </div>
         </div>
 
-        <!-- Missing Skill Badge -->
-        <div class="card bg-base-300/30 backdrop-blur-md border border-white/10 rounded-2xl">
-          <div class="card-body">
-            <div class="flex items-center gap-3">
-              <div class="text-3xl">🎯</div>
-              <div>
-                <h3 class="text-sm font-semibold opacity-70">Missing Skill Identified</h3>
-                <p class="text-lg font-bold text-secondary">{{ parsedResult.analysis.missing_skill }}</p>
+        <!-- Roadmap Timeline -->
+        <div class="space-y-4">
+          <div
+            v-for="(item, index) in roadmap"
+            :key="item.timeframe"
+            class="card bg-base-300/30 backdrop-blur-md border border-white/10 rounded-2xl overflow-hidden"
+          >
+            <!-- Timeline Header (always visible) -->
+            <div
+              class="card-body cursor-pointer"
+              @click="expandedItem = expandedItem === index ? -1 : index"
+            >
+              <div class="flex items-start gap-4">
+                <!-- Timeline indicator -->
+                <div class="flex flex-col items-center">
+                  <div :class="[
+                    'w-12 h-12 rounded-full flex items-center justify-center text-2xl',
+                    `bg-${timeframeLabels[item.timeframe]?.color || 'primary'}/20`
+                  ]">
+                    {{ timeframeLabels[item.timeframe]?.icon || '📦' }}
+                  </div>
+                  <div v-if="index < roadmap.length - 1" class="w-0.5 h-8 bg-base-content/20 mt-2"></div>
+                </div>
+
+                <!-- Content -->
+                <div class="flex-1">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span :class="[
+                      'badge',
+                      `badge-${timeframeLabels[item.timeframe]?.color || 'primary'}`
+                    ]">
+                      {{ timeframeLabels[item.timeframe]?.label || item.timeframe }}
+                    </span>
+                    <span
+                      v-if="item.decision === 'SUBSTITUTED'"
+                      class="badge badge-warning badge-sm"
+                    >
+                      Safety Adjusted
+                    </span>
+                  </div>
+
+                  <h3 class="text-xl font-bold mt-2" style="font-family: 'Fredoka', sans-serif;">
+                    {{ item.final_toy || item.recommended_toy }}
+                  </h3>
+
+                  <p class="text-sm opacity-70 mt-1">
+                    Develops: <span class="font-semibold text-secondary">{{ item.missing_skill }}</span>
+                  </p>
+
+                  <!-- Expand indicator -->
+                  <div class="flex items-center gap-1 mt-2 text-xs opacity-50">
+                    <svg
+                      :class="['w-4 h-4 transition-transform', expandedItem === index ? 'rotate-180' : '']"
+                      fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                    >
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                    {{ expandedItem === index ? 'Less details' : 'More details' }}
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
 
-        <!-- Analysis Section -->
-        <div class="collapse collapse-arrow bg-base-300/30 backdrop-blur-md border border-white/10 rounded-2xl">
-          <input type="checkbox" checked />
-          <div class="collapse-title text-lg font-semibold flex items-center gap-2">
-            <span>🧠</span> Why This Toy?
-          </div>
-          <div class="collapse-content">
-            <p class="text-base-content/80 leading-relaxed">{{ parsedResult.analysis.reasoning }}</p>
+            <!-- Expanded Content -->
+            <div v-if="expandedItem === index" class="px-6 pb-6 space-y-4">
+              <div class="divider my-0"></div>
+
+              <!-- Reasoning -->
+              <div>
+                <h4 class="font-semibold flex items-center gap-2 mb-2">
+                  <span>🧠</span> Why This Toy?
+                </h4>
+                <p class="text-sm text-base-content/80 leading-relaxed">{{ item.reasoning }}</p>
+              </div>
+
+              <!-- Safety Context -->
+              <div v-if="item.safety_context">
+                <h4 class="font-semibold flex items-center gap-2 mb-2">
+                  <span>🛡️</span> Safety Check
+                  <span :class="[
+                    'badge badge-sm',
+                    item.decision === 'APPROVED' ? 'badge-success' : 'badge-warning'
+                  ]">
+                    {{ item.decision }}
+                  </span>
+                </h4>
+                <p class="text-sm text-base-content/80 leading-relaxed">{{ item.safety_context }}</p>
+              </div>
+
+              <!-- O*NET Reference -->
+              <div class="text-xs opacity-50">
+                O*NET Skill: {{ item.missing_skill }} ({{ item.skill_id }}) • Category: {{ item.skill_category }}
+              </div>
+
+              <!-- Retailer Buttons -->
+              <div class="flex flex-wrap gap-2 pt-2">
+                <a
+                  v-for="retailer in getRetailers(item.amazon_search)"
+                  :key="retailer.name"
+                  :href="retailer.url"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  :class="['btn btn-sm gap-2', retailer.color]"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                  {{ retailer.name }}
+                </a>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -173,21 +242,7 @@ onUnmounted(() => {
             <span>📊</span> Current Playroom Analysis
           </div>
           <div class="collapse-content">
-            <p class="text-base-content/80 leading-relaxed">{{ parsedResult.analysis.status_quo }}</p>
-          </div>
-        </div>
-
-        <!-- Safety Section -->
-        <div class="collapse collapse-arrow bg-base-300/30 backdrop-blur-md border border-white/10 rounded-2xl">
-          <input type="checkbox" />
-          <div class="collapse-title text-lg font-semibold flex items-center gap-2">
-            <span>🛡️</span> Safety Information
-          </div>
-          <div class="collapse-content">
-            <div class="flex items-start gap-2">
-              <span class="badge badge-success badge-sm mt-1">{{ parsedResult.recommendation.decision }}</span>
-              <p class="text-base-content/80 leading-relaxed text-sm">{{ parsedResult.recommendation.safety_context }}</p>
-            </div>
+            <p class="text-base-content/80 leading-relaxed">{{ statusQuo }}</p>
           </div>
         </div>
 
@@ -201,13 +256,14 @@ onUnmounted(() => {
 
       </template>
 
-      <!-- Fallback: Raw JSON if parsing failed -->
-      <div v-else-if="status === 'done' && !parsedResult" class="card bg-base-300/30 backdrop-blur-md border border-white/10 rounded-2xl">
+      <!-- Fallback: Raw JSON if structure is unexpected -->
+      <div v-else-if="status === 'done'" class="card bg-base-300/30 backdrop-blur-md border border-white/10 rounded-2xl">
         <div class="card-body">
           <h2 class="text-2xl font-semibold text-success mb-4">Analysis Complete</h2>
           <div class="bg-base-100/50 rounded-lg p-4 overflow-auto max-h-96">
             <pre class="text-sm whitespace-pre-wrap">{{ JSON.stringify(result, null, 2) }}</pre>
           </div>
+          <RouterLink to="/" class="btn btn-primary mt-4">Back to Home</RouterLink>
         </div>
       </div>
 
