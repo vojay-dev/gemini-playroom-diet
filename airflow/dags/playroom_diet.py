@@ -133,37 +133,27 @@ def process_scans():
             - Provide a clear 'safety_context' explaining your decision.
         """
     )
-    def safety_check(analysis_result: dict, scan_record: tuple):
+    def safety_check(zipped_input: tuple):
+        analysis_result, scan_record = zipped_input
         child_age = scan_record[2]
         return json.dumps({**analysis_result, "child_age": child_age})
 
-    recommendations = safety_check.expand(
-        analysis_result=analysis_results,
-        scan_record=_get_new_scans.output
-    )
+    zipped_input_safety = analysis_results.zip(_get_new_scans.output)
+    recommendations = safety_check.expand(zipped_input=zipped_input_safety)
 
     @task
-    def print_result(
-        toy_inventory: dict,
-        analysis_result: dict,
-        toy_recommendation: dict
-    ):
+    def print_result(zipped_input: tuple):
+        toy_inventory, analysis_result, toy_recommendation = zipped_input
         print("Toy Inventory:", json.dumps(toy_inventory, indent=2))
         print("Analysis Result:", json.dumps(analysis_result, indent=2))
         print("Toy Recommendation:", json.dumps(toy_recommendation, indent=2))
 
-    print_result.expand(
-        toy_inventory=toy_inventories,
-        analysis_result=analysis_results,
-        toy_recommendation=recommendations
-    )
+    zipped_input_print = toy_inventories.zip(analysis_results, recommendations)
+    print_result.expand(zipped_input=zipped_input_print)
 
     @task
-    def save_result(
-        analysis_result: dict,
-        toy_recommendation: dict,
-        scan_record: tuple
-    ):
+    def save_result(zipped_input: tuple):
+        analysis_result, toy_recommendation, scan_record = zipped_input
         scan_id = str(scan_record[0])
 
         payload = {
@@ -177,10 +167,7 @@ def process_scans():
             "results_json": payload
         }).eq("id", scan_id).execute()
 
-    save_result.expand(
-        analysis_result=analysis_results,
-        toy_recommendation=recommendations,
-        scan_record=_get_new_scans.output
-    )
+    zipped_input_save = analysis_results.zip(recommendations, _get_new_scans.output)
+    save_result.expand(zipped_input=zipped_input_save)
 
 process_scans()
