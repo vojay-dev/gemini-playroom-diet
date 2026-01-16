@@ -8,8 +8,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from storage3.types import FileOptions
 from supabase import create_client, Client
 
+from airflow import AirflowClient
+
 load_dotenv()
 
+# setup Supabase client
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_SECRET_KEY = os.getenv("SUPABASE_SECRET_KEY")
 
@@ -17,6 +20,21 @@ if not SUPABASE_URL or not SUPABASE_SECRET_KEY:
     raise ValueError("Missing SUPABASE_URL or SUPABASE_SECRET_KEY")
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_SECRET_KEY)
+
+# setup Airflow client
+AIRFLOW_HOST = os.getenv("AIRFLOW_HOST", "http://localhost:8080")
+AIRFLOW_USERNAME = os.getenv("AIRFLOW_USERNAME", "airflow")
+AIRFLOW_PASSWORD = os.getenv("AIRFLOW_PASSWORD", "airflow")
+AIRFLOW_STATIC_TOKEN = os.getenv("AIRFLOW_STATIC_TOKEN") or None
+
+airflow_client: AirflowClient = AirflowClient(
+    AIRFLOW_HOST,
+    AIRFLOW_USERNAME,
+    AIRFLOW_PASSWORD,
+    AIRFLOW_STATIC_TOKEN
+)
+
+# setup FastAPI app
 app: FastAPI = FastAPI(title="Playroom Diet API")
 
 app.add_middleware(
@@ -63,7 +81,11 @@ async def create_scan(
             "created_at": datetime.now().isoformat()
         }
         supabase.table("scans").insert(data).execute()
-        return {"scan_id": scan_id, "message": "Upload successful"}
+
+        # trigger Airflow Dag
+        dag_run_id = airflow_client.trigger_dag("process_scans")
+
+        return {"scan_id": scan_id, "dag_run_id": dag_run_id}
     except Exception as e:
         print(f"Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
