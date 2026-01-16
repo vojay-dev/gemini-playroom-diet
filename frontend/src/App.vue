@@ -1,8 +1,27 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import PlayroomScene from './components/PlayroomScene.vue'
 
 const isNightTheme = ref(true)
+const scansToday = ref(0)
+const dailyLimit = ref(20)
+let limitsInterval = null
+
+const usagePercent = computed(() => Math.min(100, (scansToday.value / dailyLimit.value) * 100))
+
+const fetchLimits = async () => {
+  try {
+    const apiUrl = import.meta.env.GPD_API_URL || 'http://localhost:8000'
+    const response = await fetch(`${apiUrl}/api/limits`)
+    if (response.ok) {
+      const data = await response.json()
+      scansToday.value = data.scans_today
+      dailyLimit.value = data.daily_scan_limit
+    }
+  } catch (e) {
+    // silently fail - limits display is non-critical
+  }
+}
 
 const toggleTheme = () => {
   isNightTheme.value = !isNightTheme.value
@@ -17,6 +36,13 @@ onMounted(() => {
     isNightTheme.value = false
     document.documentElement.setAttribute('data-theme', 'dracula')
   }
+
+  fetchLimits()
+  limitsInterval = setInterval(fetchLimits, 30000)
+})
+
+onUnmounted(() => {
+  if (limitsInterval) clearInterval(limitsInterval)
 })
 </script>
 
@@ -45,7 +71,16 @@ onMounted(() => {
       <div class="navbar-center">
         <a class="btn btn-ghost text-xl">Gemini Playroom Diet</a>
       </div>
-      <div class="navbar-end">
+      <div class="navbar-end gap-2">
+        <!-- Usage Display -->
+        <div class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-base-100/50 border border-white/10 text-sm">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          </svg>
+          <span class="font-mono" :class="usagePercent >= 90 ? 'text-error' : usagePercent >= 70 ? 'text-warning' : 'text-success'">
+            {{ scansToday }}/{{ dailyLimit }}
+          </span>
+        </div>
         <!-- Theme Toggle: Boy (night) / Girl (dracula) -->
         <label class="swap swap-rotate btn btn-ghost btn-circle" @click="toggleTheme">
           <!-- Boy icon (night theme) -->

@@ -8,6 +8,7 @@ dependencies = [
     "fastapi>=0.128.0",
     "python-dotenv>=1.2.1",
     "python-multipart>=0.0.21",
+    "slowapi>=0.1.9",
     "supabase>=2.27.1",
     "uvicorn>=0.40.0",
 ]

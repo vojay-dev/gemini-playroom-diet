@@ -1,13 +1,18 @@
 import os
 import uuid
-from datetime import datetime
+from datetime import datetime, date
+from time import time
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from postgrest.exceptions import APIError
+from slowapi import Limiter
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 from storage3.types import FileOptions
 from supabase import create_client, Client
-from postgrest.exceptions import APIError
 
 from airflow import AirflowClient
 
@@ -35,8 +40,25 @@ airflow_client: AirflowClient = AirflowClient(
     AIRFLOW_STATIC_TOKEN
 )
 
+# rate limiting config
+DAILY_SCAN_LIMIT = int(os.getenv("DAILY_SCAN_LIMIT", "20"))
+GET_RATE_LIMIT = os.getenv("GET_RATE_LIMIT", "30/minute")
+POST_RATE_LIMIT = os.getenv("POST_RATE_LIMIT", "5/minute")
+
+limiter = Limiter(key_func=get_remote_address)
+
+# cache for daily scan count (5 second TTL)
+_scan_count_cache: dict = {"count": 0, "timestamp": 0}
+CACHE_TTL_SECONDS = 5
+
 # setup FastAPI app
 app: FastAPI = FastAPI(title="Playroom Diet API")
+app.state.limiter = limiter
+
+
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
+    return JSONResponse(status_code=429, content={"detail": "Rate limit exceeded"})
 
 app.add_middleware(
     CORSMiddleware,
@@ -47,13 +69,39 @@ app.add_middleware(
 )
 
 
+def get_today_scan_count(bypass_cache: bool = False) -> int:
+    now = time()
+    if not bypass_cache and now - _scan_count_cache["timestamp"] < CACHE_TTL_SECONDS:
+        return _scan_count_cache["count"]
+
+    today_start = date.today().isoformat()
+    result = supabase.table("scans").select("id", count="exact").gte("created_at", today_start).execute()
+    count = result.count or 0
+
+    _scan_count_cache["count"] = count
+    _scan_count_cache["timestamp"] = now
+    return count
+
+
 @app.get("/")
 def health_check():
     return {"status": "ok", "service": "Gemini Playroom Diet Backend"}
 
 
+@app.get("/api/limits")
+@limiter.limit(GET_RATE_LIMIT)
+def get_limits(request: Request):
+    current_count = get_today_scan_count()
+    return {
+        "daily_scan_limit": DAILY_SCAN_LIMIT,
+        "scans_today": current_count,
+        "scans_remaining": max(0, DAILY_SCAN_LIMIT - current_count)
+    }
+
+
 @app.get("/api/scan/{scan_id}")
-def get_scan(scan_id: str):
+@limiter.limit(GET_RATE_LIMIT)
+def get_scan(request: Request, scan_id: str):
     try:
         result = supabase.table("scans").select("*").eq("id", scan_id).execute()
     except APIError:
@@ -72,10 +120,17 @@ def get_scan(scan_id: str):
 
 
 @app.post("/api/scan")
+@limiter.limit(POST_RATE_LIMIT)
 async def create_scan(
+    request: Request,
     age: int = Form(...),
     file: UploadFile = File(...)
 ):
+    # check daily limit (bypass cache for accurate count)
+    current_count = get_today_scan_count(bypass_cache=True)
+    if current_count >= DAILY_SCAN_LIMIT:
+        raise HTTPException(status_code=429, detail="Daily scan limit reached")
+
     try:
         # upload file
         file_content = await file.read()
