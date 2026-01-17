@@ -12,48 +12,33 @@ from postgrest.exceptions import APIError
 from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
-from storage3.types import FileOptions
 from supabase import create_client, Client
 
 from airflow import AirflowClient
 
 load_dotenv()
 
-# setup Supabase client
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_SECRET_KEY = os.getenv("SUPABASE_SECRET_KEY")
-
 if not SUPABASE_URL or not SUPABASE_SECRET_KEY:
     raise ValueError("Missing SUPABASE_URL or SUPABASE_SECRET_KEY")
-
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_SECRET_KEY)
 
-# setup Airflow client
 AIRFLOW_HOST = os.getenv("AIRFLOW_HOST", "http://localhost:8080")
 AIRFLOW_USERNAME = os.getenv("AIRFLOW_USERNAME", "airflow")
 AIRFLOW_PASSWORD = os.getenv("AIRFLOW_PASSWORD", "airflow")
 AIRFLOW_STATIC_TOKEN = os.getenv("AIRFLOW_STATIC_TOKEN") or None
+airflow_client = AirflowClient(AIRFLOW_HOST, AIRFLOW_USERNAME, AIRFLOW_PASSWORD, AIRFLOW_STATIC_TOKEN)
 
-airflow_client: AirflowClient = AirflowClient(
-    AIRFLOW_HOST,
-    AIRFLOW_USERNAME,
-    AIRFLOW_PASSWORD,
-    AIRFLOW_STATIC_TOKEN
-)
-
-# rate limiting config
 DAILY_SCAN_LIMIT = int(os.getenv("DAILY_SCAN_LIMIT", "20"))
 GET_RATE_LIMIT = os.getenv("GET_RATE_LIMIT", "30/minute")
 POST_RATE_LIMIT = os.getenv("POST_RATE_LIMIT", "5/minute")
-
 limiter = Limiter(key_func=get_remote_address)
 
-# cache for daily scan count (5 second TTL)
-_scan_count_cache: dict = {"count": 0, "timestamp": 0}
+_scan_count_cache = {"count": 0, "timestamp": 0}
 CACHE_TTL_SECONDS = 5
 
-# setup FastAPI app
-app: FastAPI = FastAPI(title="Playroom Diet API")
+app = FastAPI(title="Playroom Diet API")
 app.state.limiter = limiter
 
 
@@ -112,11 +97,7 @@ def get_scan(request: Request, scan_id: str):
         raise HTTPException(status_code=404, detail="Scan not found")
 
     scan = result.data[0]
-
-    # build public URL for the image
-    image_url = None
-    if scan.get("image_path"):
-        image_url = supabase.storage.from_("playroom-images").get_public_url(scan["image_path"])
+    image_url = supabase.storage.from_("playroom-images").get_public_url(scan["image_path"]) if scan.get("image_path") else None
 
     return {
         "scan_id": scan_id,
@@ -134,54 +115,38 @@ async def create_scan(
     file: UploadFile = File(...)
 ):
     try:
-        # read file content and compute hash
         file_content = await file.read()
         image_hash = hashlib.sha256(file_content).hexdigest()
 
-        # check if we already have a scan with this exact image
         existing = supabase.table("scans").select("id, status").eq("image_hash", image_hash).execute()
         if existing.data:
-            # return existing scan (user can poll for results)
             existing_scan = existing.data[0]
-            return {
-                "scan_id": existing_scan["id"],
-                "cached": True,
-                "status": existing_scan["status"]
-            }
+            return {"scan_id": existing_scan["id"], "cached": True, "status": existing_scan["status"]}
 
-        # check daily limit (bypass cache for accurate count) - only for new scans
         current_count = get_today_scan_count(bypass_cache=True)
         if current_count >= DAILY_SCAN_LIMIT:
             raise HTTPException(status_code=429, detail="Daily scan limit reached")
 
-        # upload file
-        file_ext = file.filename.split(".")[-1]
-
         scan_id = str(uuid.uuid4())
+        file_ext = file.filename.split(".")[-1]
         file_path = f"scans/{scan_id}.{file_ext}"
 
-        mime_type = file.content_type or "image/jpeg"
-        file_options: FileOptions = {"content-type": mime_type}
         supabase.storage.from_("playroom-images").upload(
             path=file_path,
             file=file_content,
-            file_options=file_options
+            file_options={"content-type": file.content_type or "image/jpeg"}
         )
 
-        # insert scan row with image hash
-        data = {
+        supabase.table("scans").insert({
             "id": scan_id,
             "child_age": age,
             "image_path": file_path,
             "image_hash": image_hash,
             "status": "processing",
             "created_at": datetime.now().isoformat()
-        }
-        supabase.table("scans").insert(data).execute()
+        }).execute()
 
-        # trigger Airflow Dag
         dag_run_id = airflow_client.trigger_dag("process_scans")
-
         return {"scan_id": scan_id, "dag_run_id": dag_run_id, "cached": False}
     except HTTPException:
         raise

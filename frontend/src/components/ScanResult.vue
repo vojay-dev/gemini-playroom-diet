@@ -11,31 +11,24 @@ const status = ref('loading')
 const result = ref(null)
 const error = ref(null)
 const imageUrl = ref(null)
-const expandedItem = ref(0) // Which roadmap item is expanded
+const expandedItem = ref(0)
 const showShareModal = ref(false)
 let pollInterval = null
 
-// New structure: result is already parsed, no nested JSON
 const roadmap = computed(() => result.value?.roadmap || [])
 const skillScores = computed(() => result.value?.skill_scores || {})
 const statusQuo = computed(() => result.value?.status_quo || '')
 const toyInventory = computed(() => result.value?.toy_inventory || [])
 
-// Calculate projected scores after completing roadmap
 const projectedScores = computed(() => {
   if (!skillScores.value || !roadmap.value.length) return null
-
   const projected = { ...skillScores.value }
-
-  // Each roadmap item improves its target category
   roadmap.value.forEach(item => {
     const category = item.skill_category
     if (category && projected[category] !== undefined) {
-      // Improve by 15-20 points, capped at 95
       projected[category] = Math.min(95, projected[category] + 15 + Math.floor(Math.random() * 5))
     }
   })
-
   return projected
 })
 
