@@ -19,14 +19,15 @@ uv run uvicorn main:app --reload
 Create table and enable row level security:
 
 ```sql
-create table public.scans (
-  id uuid not null primary key,
-  created_at timestamptz not null default now(),
-  child_age int not null,
-  image_path text not null,
-  status text not null default 'processing',
-  results_json jsonb
+CREATE TABLE scans (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  child_age INTEGER NOT NULL,
+  image_path TEXT NOT NULL,
+  image_hash VARCHAR(64),
+  status VARCHAR(20) NOT NULL DEFAULT 'processing',
+  results_json JSONB,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-alter table public.scans enable row level security;
+ALTER TABLE public.scans ENABLE ROW LEVEL SECURITY;
 ```

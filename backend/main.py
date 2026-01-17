@@ -1,3 +1,4 @@
+import hashlib
 import os
 import uuid
 from datetime import datetime, date
@@ -126,14 +127,28 @@ async def create_scan(
     age: int = Form(...),
     file: UploadFile = File(...)
 ):
-    # check daily limit (bypass cache for accurate count)
-    current_count = get_today_scan_count(bypass_cache=True)
-    if current_count >= DAILY_SCAN_LIMIT:
-        raise HTTPException(status_code=429, detail="Daily scan limit reached")
-
     try:
-        # upload file
+        # read file content and compute hash
         file_content = await file.read()
+        image_hash = hashlib.sha256(file_content).hexdigest()
+
+        # check if we already have a scan with this exact image
+        existing = supabase.table("scans").select("id, status").eq("image_hash", image_hash).execute()
+        if existing.data:
+            # return existing scan (user can poll for results)
+            existing_scan = existing.data[0]
+            return {
+                "scan_id": existing_scan["id"],
+                "cached": True,
+                "status": existing_scan["status"]
+            }
+
+        # check daily limit (bypass cache for accurate count) - only for new scans
+        current_count = get_today_scan_count(bypass_cache=True)
+        if current_count >= DAILY_SCAN_LIMIT:
+            raise HTTPException(status_code=429, detail="Daily scan limit reached")
+
+        # upload file
         file_ext = file.filename.split(".")[-1]
 
         scan_id = str(uuid.uuid4())
@@ -147,11 +162,12 @@ async def create_scan(
             file_options=file_options
         )
 
-        # insert scan row
+        # insert scan row with image hash
         data = {
             "id": scan_id,
             "child_age": age,
             "image_path": file_path,
+            "image_hash": image_hash,
             "status": "processing",
             "created_at": datetime.now().isoformat()
         }
@@ -160,7 +176,9 @@ async def create_scan(
         # trigger Airflow Dag
         dag_run_id = airflow_client.trigger_dag("process_scans")
 
-        return {"scan_id": scan_id, "dag_run_id": dag_run_id}
+        return {"scan_id": scan_id, "dag_run_id": dag_run_id, "cached": False}
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))

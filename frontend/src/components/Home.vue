@@ -15,6 +15,25 @@ const handleFileChange = (event) => {
   previewUrl.value = URL.createObjectURL(selected)
 }
 
+const exampleImages = [
+  { src: '/examples/playroom1.jpg', label: 'Example 1' },
+  { src: '/examples/playroom2.jpg', label: 'Example 2' }
+]
+
+const selectExample = async (exampleSrc) => {
+  try {
+    const response = await fetch(exampleSrc)
+    const blob = await response.blob()
+    const filename = exampleSrc.split('/').pop()
+    const exampleFile = new File([blob], filename, { type: blob.type })
+
+    file.value = exampleFile
+    previewUrl.value = URL.createObjectURL(blob)
+  } catch (e) {
+    console.error('Failed to load example:', e)
+  }
+}
+
 const handleSubmit = async () => {
   if (!file.value) return alert("Please select a photo first!")
 
@@ -127,6 +146,30 @@ const handleSubmit = async () => {
                       @change="handleFileChange"
                     />
                 </label>
+            </div>
+
+            <!-- Example Images -->
+            <div class="mt-4">
+              <div class="flex items-center gap-2 mb-2">
+                <div class="flex-1 h-px bg-base-content/20"></div>
+                <span class="text-xs text-base-content/50">or try an example</span>
+                <div class="flex-1 h-px bg-base-content/20"></div>
+              </div>
+              <div class="flex gap-2 justify-center">
+                <button
+                  v-for="(example, index) in exampleImages"
+                  :key="index"
+                  type="button"
+                  @click="selectExample(example.src)"
+                  class="relative w-16 h-16 rounded-lg overflow-hidden border-2 border-transparent hover:border-primary transition-all hover:scale-105"
+                >
+                  <img
+                    :src="example.src"
+                    :alt="example.label"
+                    class="w-full h-full object-cover"
+                  />
+                </button>
+              </div>
             </div>
           </div>
 
