@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue'
-import html2canvas from 'html2canvas'
+import { domToPng } from 'modern-screenshot'
 
 const props = defineProps({
   roadmap: {
@@ -48,36 +48,12 @@ const generateImage = async () => {
   isGenerating.value = true
 
   try {
-    const canvas = await html2canvas(cardRef.value, {
-      backgroundColor: '#1a1a2e',
+    const dataUrl = await domToPng(cardRef.value, {
       scale: 2,
-      useCORS: true,
-      logging: false,
-      onclone: (clonedDoc, element) => {
-        // Override all elements to remove oklch colors
-        const allElements = element.querySelectorAll('*')
-        allElements.forEach(el => {
-          const computed = window.getComputedStyle(el)
-          // Force safe colors on problematic properties
-          if (computed.color.includes('oklch')) {
-            el.style.color = '#ffffff'
-          }
-          if (computed.backgroundColor.includes('oklch')) {
-            el.style.backgroundColor = 'transparent'
-          }
-          if (computed.borderColor.includes('oklch')) {
-            el.style.borderColor = 'transparent'
-          }
-        })
-        // Also fix the root element
-        const rootComputed = window.getComputedStyle(element)
-        if (rootComputed.color.includes('oklch')) {
-          element.style.color = '#ffffff'
-        }
-      }
+      backgroundColor: '#1a1a2e'
     })
 
-    imageUrl.value = canvas.toDataURL('image/png')
+    imageUrl.value = dataUrl
     isGenerated.value = true
   } catch (e) {
     console.error('Failed to generate image:', e)
