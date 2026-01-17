@@ -19,6 +19,7 @@ let pollInterval = null
 const roadmap = computed(() => result.value?.roadmap || [])
 const skillScores = computed(() => result.value?.skill_scores || {})
 const statusQuo = computed(() => result.value?.status_quo || '')
+const toyInventory = computed(() => result.value?.toy_inventory || [])
 
 // Calculate projected scores after completing roadmap
 const projectedScores = computed(() => {
@@ -311,12 +312,63 @@ onUnmounted(() => {
 
           <!-- Current Status Section -->
           <div class="collapse collapse-arrow bg-base-300/30 backdrop-blur-md border border-white/10 rounded-2xl">
-            <input type="checkbox" />
+            <input type="checkbox" checked />
             <div class="collapse-title text-lg font-semibold flex items-center gap-2">
               <span>📊</span> Current Playroom Analysis
             </div>
             <div class="collapse-content">
+              <!-- Heatmap Image -->
+              <div v-if="imageUrl && toyInventory.length" class="relative rounded-xl overflow-hidden mb-4">
+                <img :src="imageUrl" alt="Your playroom" class="w-full h-auto brightness-50" />
+
+                <!-- Subtle grid overlay -->
+                <div class="absolute inset-0 ai-grid"></div>
+
+                <!-- Detection boxes -->
+                <svg class="absolute inset-0 w-full h-full" preserveAspectRatio="none">
+                  <defs>
+                    <linearGradient id="boxGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stop-color="rgba(34, 211, 238, 0.4)" />
+                      <stop offset="100%" stop-color="rgba(168, 85, 247, 0.4)" />
+                    </linearGradient>
+                  </defs>
+                  <!-- Detection rectangles with corner accents -->
+                  <g v-for="(toy, index) in toyInventory" :key="index">
+                    <!-- Fill -->
+                    <rect
+                      :x="`${toy.bbox.x * 100}%`"
+                      :y="`${toy.bbox.y * 100}%`"
+                      :width="`${toy.bbox.w * 100}%`"
+                      :height="`${toy.bbox.h * 100}%`"
+                      fill="url(#boxGradient)"
+                    />
+                    <!-- Border -->
+                    <rect
+                      :x="`${toy.bbox.x * 100}%`"
+                      :y="`${toy.bbox.y * 100}%`"
+                      :width="`${toy.bbox.w * 100}%`"
+                      :height="`${toy.bbox.h * 100}%`"
+                      fill="none"
+                      stroke="rgba(34, 211, 238, 0.8)"
+                      stroke-width="1"
+                    />
+                  </g>
+                </svg>
+              </div>
               <p class="text-base-content/80 leading-relaxed">{{ statusQuo }}</p>
+              <!-- Toy inventory legend -->
+              <div v-if="toyInventory.length" class="mt-4 pt-4 border-t border-white/10">
+                <p class="text-sm font-semibold mb-2">Detected Items:</p>
+                <div class="flex flex-wrap gap-2">
+                  <span
+                    v-for="(toy, index) in toyInventory"
+                    :key="index"
+                    class="badge badge-outline badge-sm"
+                  >
+                    {{ toy.item_name }} ({{ toy.count }})
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -457,5 +509,13 @@ onUnmounted(() => {
     opacity: 1;
     transform: scale(1) rotate(180deg);
   }
+}
+
+/* AI-style grid overlay */
+.ai-grid {
+  background-image:
+    linear-gradient(rgba(34, 211, 238, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(34, 211, 238, 0.1) 1px, transparent 1px);
+  background-size: 20px 20px;
 }
 </style>

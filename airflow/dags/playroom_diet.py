@@ -15,11 +15,18 @@ supabase_project_url = os.getenv("SUPABASE_PROJECT_URL")
 supabase_secret_key = os.getenv("SUPABASE_SECRET_KEY")
 
 
+class BoundingBox(BaseModel):
+    x: float  # 0-1 normalized, left edge
+    y: float  # 0-1 normalized, top edge
+    w: float  # 0-1 normalized, width
+    h: float  # 0-1 normalized, height
+
 class Toy(BaseModel):
     category: str
     item_name: str
     count: int
     play_mode: str
+    bbox: BoundingBox  # Location in image (normalized 0-1 coordinates)
 
 class ToyInventory(BaseModel):
     items: list[Toy]
@@ -86,6 +93,12 @@ def process_scans():
             2. "item_name": Specific description (e.g., "Hot Wheels Cars", "Duplo Blocks").
             3. "count": An estimated count (e.g., 1, 2, 5).
             4. "play_mode": The primary type of interaction (e.g., "Passive", "Constructive", "Pretend Play", "Gross Motor", "Fine Motor").
+            5. "bbox": Bounding box location in the image using NORMALIZED coordinates (0-1 range):
+               - "x": Left edge position (0 = left side, 1 = right side)
+               - "y": Top edge position (0 = top, 1 = bottom)
+               - "w": Width of the bounding box (0-1)
+               - "h": Height of the bounding box (0-1)
+               Example: A toy in the center would have bbox: {"x": 0.4, "y": 0.4, "w": 0.2, "h": 0.2}
 
             You can define your own categories and play modes based on the toys you see.
             If the image provided is not a playroom or no toys are visible, respond with an empty "items" list.
@@ -201,7 +214,7 @@ def process_scans():
 
     @task
     def save_result(zipped_input: tuple):
-        analysis_result, toy_recommendation, scan_record = zipped_input
+        toy_inventory, analysis_result, toy_recommendation, scan_record = zipped_input
         scan_id = str(scan_record[0])
 
         # Merge roadmap with safety recommendations
@@ -223,7 +236,8 @@ def process_scans():
         payload = {
             "status_quo": analysis_result.get("status_quo", ""),
             "skill_scores": analysis_result.get("skill_scores", {}),
-            "roadmap": merged_roadmap
+            "roadmap": merged_roadmap,
+            "toy_inventory": toy_inventory.get("items", [])
         }
         supabase = create_client(supabase_project_url, supabase_secret_key)
 
@@ -232,7 +246,7 @@ def process_scans():
             "results_json": payload
         }).eq("id", scan_id).execute()
 
-    zipped_input_save = analysis_results.zip(recommendations, _get_new_scans.output)
+    zipped_input_save = toy_inventories.zip(analysis_results, recommendations, _get_new_scans.output)
     save_result.expand(zipped_input=zipped_input_save)
 
 process_scans()
