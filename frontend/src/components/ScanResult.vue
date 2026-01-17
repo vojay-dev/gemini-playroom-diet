@@ -10,6 +10,7 @@ const scanId = route.params.id
 const status = ref('loading')
 const result = ref(null)
 const error = ref(null)
+const imageUrl = ref(null)
 const expandedItem = ref(0) // Which roadmap item is expanded
 const showShareModal = ref(false)
 let pollInterval = null
@@ -70,6 +71,7 @@ const fetchScan = async () => {
 
     const data = await response.json()
     status.value = data.status
+    imageUrl.value = data.image_url
 
     if (data.status === 'done') {
       result.value = data.result
@@ -116,9 +118,24 @@ onUnmounted(() => {
       <!-- Processing State -->
       <div v-else-if="status === 'processing'" class="card bg-base-300/30 backdrop-blur-md border border-white/10 rounded-2xl">
         <div class="card-body flex flex-col items-center text-center py-12">
-          <span class="loading loading-dots loading-lg text-primary"></span>
-          <h2 class="text-2xl font-semibold mt-4">Analyzing your playroom...</h2>
-          <p class="mt-2 opacity-70">This may take a minute. We're using AI to analyze the toys.</p>
+          <h2 class="text-2xl font-semibold">Analyzing your playroom...</h2>
+
+          <!-- Scanning Image -->
+          <div v-if="imageUrl" class="relative rounded-xl overflow-hidden my-6 shadow-lg">
+            <img :src="imageUrl" alt="Your playroom" class="w-72 h-52 object-cover" />
+
+            <!-- Dark overlay -->
+            <div class="absolute inset-0 bg-black/40"></div>
+
+            <!-- Sparkle stars -->
+            <div class="sparkle s1"></div>
+            <div class="sparkle s2"></div>
+            <div class="sparkle s3"></div>
+            <div class="sparkle s4"></div>
+            <div class="sparkle s5"></div>
+          </div>
+
+          <p class="opacity-70">This may take a minute. We're using AI to analyze the toys.</p>
           <div class="flex flex-col items-center mt-6 gap-2">
             <div class="flex items-center gap-2 text-sm opacity-50">
               <span class="loading loading-ring loading-xs"></span>
@@ -390,3 +407,55 @@ onUnmounted(() => {
     </div>
   </div>
 </template>
+
+<style scoped>
+/* 4-point star sparkle */
+.sparkle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: white;
+  border-radius: 50%;
+  animation: sparkle-pop 2s ease-in-out infinite;
+}
+
+.sparkle::before,
+.sparkle::after {
+  content: '';
+  position: absolute;
+  background: white;
+  border-radius: 2px;
+}
+
+.sparkle::before {
+  width: 2px;
+  height: 12px;
+  left: 1px;
+  top: -4px;
+}
+
+.sparkle::after {
+  width: 12px;
+  height: 2px;
+  left: -4px;
+  top: 1px;
+}
+
+/* Position each sparkle */
+.s1 { top: 20%; left: 15%; animation-delay: 0s; }
+.s2 { top: 60%; left: 75%; animation-delay: 0.4s; }
+.s3 { top: 35%; left: 55%; animation-delay: 0.8s; }
+.s4 { top: 75%; left: 25%; animation-delay: 1.2s; }
+.s5 { top: 45%; left: 85%; animation-delay: 1.6s; }
+
+@keyframes sparkle-pop {
+  0%, 100% {
+    opacity: 0;
+    transform: scale(0) rotate(0deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1) rotate(180deg);
+  }
+}
+</style>

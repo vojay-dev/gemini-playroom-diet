@@ -113,9 +113,15 @@ def get_scan(request: Request, scan_id: str):
 
     scan = result.data[0]
 
+    # build public URL for the image
+    image_url = None
+    if scan.get("image_path"):
+        image_url = supabase.storage.from_("playroom-images").get_public_url(scan["image_path"])
+
     return {
         "scan_id": scan_id,
         "status": scan["status"],
+        "image_url": image_url,
         "result": scan.get("results_json") if scan["status"] == "done" else None
     }
 
