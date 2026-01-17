@@ -5,7 +5,13 @@ import PlayroomScene from './components/PlayroomScene.vue'
 const isNightTheme = ref(true)
 const scansToday = ref(0)
 const dailyLimit = ref(20)
+const dropdownRef = ref(null)
 let limitsInterval = null
+
+const closeMenu = () => {
+  // Blur the active element to close the dropdown
+  document.activeElement?.blur()
+}
 
 const usagePercent = computed(() => Math.min(100, (scansToday.value / dailyLimit.value) * 100))
 
@@ -56,15 +62,16 @@ onUnmounted(() => {
   <header class="relative z-20">
     <div class="navbar bg-base-300/30 backdrop-blur-md border-b border-white/10">
       <div class="navbar-start">
-        <div class="dropdown">
+        <div class="dropdown" ref="dropdownRef">
           <div tabindex="0" role="button" class="btn btn-ghost btn-circle">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" /> </svg>
           </div>
           <ul
             tabindex="-1"
             class="menu menu-md dropdown-content bg-base-100 rounded-box z-50 mt-3 w-52 p-2 shadow">
-            <li><RouterLink to="/" v-bind:class="{ 'menu-active': $route.fullPath === '/' }">Home</RouterLink></li>
-            <li><RouterLink to="/about" v-bind:class="{ 'menu-active': $route.fullPath === '/about' }">About</RouterLink></li>
+            <li><RouterLink to="/" @click="closeMenu" v-bind:class="{ 'menu-active': $route.fullPath === '/' }"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg> Home</RouterLink></li>
+            <li><RouterLink to="/system" @click="closeMenu" v-bind:class="{ 'menu-active': $route.fullPath === '/system' }"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-warning" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" /></svg> System</RouterLink></li>
+            <li><RouterLink to="/about" @click="closeMenu" v-bind:class="{ 'menu-active': $route.fullPath === '/about' }"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> About</RouterLink></li>
           </ul>
         </div>
       </div>
