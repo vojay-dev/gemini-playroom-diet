@@ -162,28 +162,28 @@ import { RouterLink } from 'vue-router'
           Built With
         </h2>
         <div class="flex flex-wrap justify-center gap-3">
-          <div class="badge badge-lg badge-outline gap-2 p-4">
+          <div class="badge badge-lg badge-soft badge-primary gap-2 p-4">
             <span>🤖</span> Gemini 3 Flash
           </div>
-          <div class="badge badge-lg badge-outline gap-2 p-4">
+          <div class="badge badge-lg badge-soft badge-primary gap-2 p-4">
             <span>🌀</span> Apache Airflow
           </div>
-          <div class="badge badge-lg badge-outline gap-2 p-4">
+          <div class="badge badge-lg badge-soft badge-primary gap-2 p-4">
             <span>⚡</span> FastAPI
           </div>
-          <div class="badge badge-lg badge-outline gap-2 p-4">
+          <div class="badge badge-lg badge-soft badge-primary gap-2 p-4">
             <span>💚</span> Vue.js 3
           </div>
-          <div class="badge badge-lg badge-outline gap-2 p-4">
+          <div class="badge badge-lg badge-soft badge-primary gap-2 p-4">
             <span>🎨</span> Tailwind CSS
           </div>
-          <div class="badge badge-lg badge-outline gap-2 p-4">
-            <span>🗄️</span> Supabase
+          <div class="badge badge-lg badge-soft badge-primary gap-2 p-4">
+            <span>🗄️</span> Postgres
           </div>
-          <div class="badge badge-lg badge-outline gap-2 p-4">
+          <div class="badge badge-lg badge-soft badge-primary gap-2 p-4">
             <span>🐍</span> Python
           </div>
-          <div class="badge badge-lg badge-outline gap-2 p-4">
+          <div class="badge badge-lg badge-soft badge-primary gap-2 p-4">
             <span>📊</span> O*NET Data
           </div>
         </div>

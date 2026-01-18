@@ -88,11 +88,33 @@ const handleSubmit = async () => {
             development plan. We use AI to audit your toys and find the missing skills.
           </p>
 
-          <!-- Trust Indicators -->
-          <div class="flex gap-2 flex-wrap justify-center lg:justify-start mb-6">
-            <div class="badge badge-outline gap-1">🤖 Gemini 3</div>
-            <div class="badge badge-outline gap-1">👁️ Vision AI</div>
-            <div class="badge badge-outline gap-1">🧬 O*NET</div>
+          <!-- Built with badges -->
+          <p class="text-xs opacity-50 mb-3">Built with:</p>
+          <div class="flex flex-wrap justify-center gap-3 mb-5">
+            <div class="badge badge-md badge-soft badge-primary gap-1 p-2">
+              <span>🤖</span> Gemini 3 Flash
+            </div>
+            <div class="badge badge-md badge-soft badge-primary gap-1 p-2">
+              <span>🌀</span> Apache Airflow
+            </div>
+            <div class="badge badge-md badge-soft badge-primary gap-1 p-2">
+              <span>⚡</span> FastAPI
+            </div>
+            <div class="badge badge-md badge-soft badge-primary gap-1 p-2">
+              <span>💚</span> Vue.js 3
+            </div>
+            <div class="badge badge-md badge-soft badge-primary gap-1 p-2">
+              <span>🎨</span> Tailwind CSS
+            </div>
+            <div class="badge badge-md badge-soft badge-primary gap-1 p-2">
+              <span>🗄️</span> Postgres
+            </div>
+            <div class="badge badge-md badge-soft badge-primary gap-1 p-2">
+              <span>🐍</span> Python
+            </div>
+            <div class="badge badge-md badge-soft badge-primary gap-1 p-2">
+              <span>📊</span> O*NET Data
+            </div>
           </div>
 
           <!-- Quick Links -->
@@ -146,15 +168,21 @@ const handleSubmit = async () => {
                 {{ age }} Years
               </span>
             </label>
+            <div class="w-full">
             <input
               type="range"
               min="1"
               max="12"
               v-model="age"
-              class="range range-primary range-sm"
+              class="range range-primary w-full"
             />
             <div class="w-full flex justify-between text-xs px-2 mt-2 opacity-50">
-              <span>1</span><span>6</span><span>12</span>
+              <span>1</span>
+              <span>3</span>
+              <span>6</span>
+              <span>9</span>
+              <span>12</span>
+            </div>
             </div>
           </div>
 
