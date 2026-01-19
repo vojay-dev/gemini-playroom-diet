@@ -356,7 +356,7 @@ onUnmounted(() => {
                   <span
                     v-for="(toy, index) in toyInventory"
                     :key="index"
-                    class="badge badge-outline badge-sm"
+                    class="badge badge-dash badge-info"
                   >
                     {{ toy.item_name }} ({{ toy.count }})
                   </span>
