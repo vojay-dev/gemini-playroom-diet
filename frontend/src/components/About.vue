@@ -13,7 +13,7 @@ import { RouterLink } from 'vue-router'
             Playroom Diet
           </h1>
           <p class="py-6 text-xl opacity-80">
-            AI-powered child development analysis that turns your chaotic toy pile into a science-backed growth plan.
+            AI-powered child development analysis that turns your chaotic toy pile into a science-backed growth plan - plus a Play Quest to start improving today.
           </p>
           <RouterLink to="/" class="btn btn-primary gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -82,6 +82,10 @@ import { RouterLink } from 'vue-router'
               <li class="flex items-start gap-3">
                 <span class="text-2xl">🗺️</span>
                 <span><strong>Receive a roadmap</strong> with 3 targeted toy recommendations</span>
+              </li>
+              <li class="flex items-start gap-3">
+                <span class="text-2xl">🎮</span>
+                <span><strong>Get a Play Quest</strong> - an activity using toys you already own</span>
               </li>
             </ul>
           </div>
@@ -234,17 +238,17 @@ import { RouterLink } from 'vue-router'
             </div>
           </div>
           <div class="flex gap-4">
+            <div class="text-3xl">🎮</div>
+            <div>
+              <h3 class="font-semibold">Play Quest</h3>
+              <p class="opacity-70 text-sm">Get an immediate activity using toys you already own - no waiting for new purchases.</p>
+            </div>
+          </div>
+          <div class="flex gap-4">
             <div class="text-3xl">📈</div>
             <div>
               <h3 class="font-semibold">Visual Insights</h3>
               <p class="opacity-70 text-sm">Skill radar chart shows coverage at a glance across all developmental areas.</p>
-            </div>
-          </div>
-          <div class="flex gap-4">
-            <div class="text-3xl">📤</div>
-            <div>
-              <h3 class="font-semibold">Shareable Results</h3>
-              <p class="opacity-70 text-sm">Generate beautiful cards to share your roadmap with family or on social media.</p>
             </div>
           </div>
         </div>

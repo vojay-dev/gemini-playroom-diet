@@ -2,7 +2,7 @@
 
 ![Playroom Diet Logo](doc/banner.png)
 
-> **Elevator Pitch**: Snap a photo of your playroom. AI maps toys to real-world skill frameworks. Get a 6-month roadmap to fill developmental gaps. Balanced play, brighter futures.
+> **Elevator Pitch**: One photo. Four AI agents map toys to O*NET professional skills, build a 6-month roadmap, and generate a Play Quest using what you own. A nutritionist for your child's play.
 
 **Playroom Diet** is an AI-powered child development tool that transforms chaotic toy piles into science-backed growth plans. Upload a photo of your playroom, and our multi-agent AI pipeline analyzes the toys, maps them to professional skill frameworks, and generates a personalized 6-month development roadmap. Think of it as a nutritionist for your child's play, ensuring a balanced "diet" of developmental stimulation.
 
@@ -20,8 +20,9 @@ This project demonstrates a **multi-agent AI pipeline** using Apache Airflow and
 1. **Agent 1**: Vision AI extracts toy inventory with bounding box coordinates
 2. **Agent 2**: Maps toys to O*NET professional skill framework
 3. **Agent 3**: Safety-checks recommendations against CPSC guidelines
+4. **Agent 4**: Generates a Play Quest using existing toys
 
-The result: actionable, science-backed toy recommendations with shopping links.
+The result: a 6-month roadmap with shopping links, plus an immediate activity parents can do today.
 
 <!-- TODO: Add instructions for local testing at the end -->
 
@@ -82,6 +83,9 @@ Approved recommendations include optimized search queries for major retailers (A
 ### 6. Visual Heatmap
 The results page displays your original image with an AI-style detection overlay, showing exactly where toys were identified, giving parents confidence in the analysis accuracy.
 
+### 7. Play Quest
+Don't wait for new toys to arrive. A dedicated AI agent creates a fun, structured play activity using toys you already own. Each quest targets a specific O*NET skill, includes step-by-step instructions, and gives parents tips to maximize engagement. Start improving development today.
+
 <!-- TODO: Add screenshots -->
 <!-- ![Skill Radar](https://files.janz.sh/playroom-diet/skill-radar.png) -->
 <!-- ![Heatmap](https://files.janz.sh/playroom-diet/heatmap.png) -->
@@ -112,19 +116,24 @@ The results page displays your original image with an AI-style detection overlay
 ### System Architecture
 
 ```
-┌─────────────┐     ┌─────────────┐     ┌─────────────────────────────────┐
-│   Frontend  │────▶│   Backend   │────▶│         Apache Airflow          │
-│   (Vue.js)  │     │  (FastAPI)  │     │                                 │
-└─────────────┘     └─────────────┘     │  ┌─────────┐  ┌─────────────┐   │
-                           │            │  │ Agent 1 │  │   Agent 2   │   │
-                           ▼            │  │ Vision  │─▶│  O*NET Map  │──┐│
-                    ┌─────────────┐     │  └─────────┘  └─────────────┘  ││
-                    │  Supabase   │     │                                ▼│
-                    │  (Storage)  │◀────│  ┌─────────┐  ┌─────────────┐   │
-                    └─────────────┘     │  │  Save   │◀─│   Agent 3   │   │
-                                        │  │ Results │  │ Safety/CPSC │   │
-                                        │  └─────────┘  └─────────────┘   │
-                                        └─────────────────────────────────┘
+┌─────────────┐     ┌─────────────┐     ┌───────────────────────────────────────┐
+│   Frontend  │────▶│   Backend   │────▶│            Apache Airflow             │
+│   (Vue.js)  │     │  (FastAPI)  │     │                                       │
+└─────────────┘     └─────────────┘     │  ┌─────────┐                          │
+                           │            │  │ Agent 1 │                          │
+                           ▼            │  │ Vision  │──┬──────────────────┐    │
+                    ┌─────────────┐     │  └─────────┘  │                  │    │
+                    │  Supabase   │     │               ▼                  ▼    │
+                    │  (Storage)  │◀────│  ┌─────────────────┐  ┌────────────┐  │
+                    └─────────────┘     │  │ Agent 2: O*NET  │  │ Agent 4:   │  │
+                                        │  │ + Agent 3: CPSC │  │ Play Quest │  │
+                                        │  └────────┬────────┘  └─────┬──────┘  │
+                                        │           └──────┬──────────┘         │
+                                        │                  ▼                    │
+                                        │           ┌────────────┐              │
+                                        │           │   Save     │              │
+                                        │           └────────────┘              │
+                                        └───────────────────────────────────────┘
 ```
 
 ### The Multi-Agent Pipeline
@@ -148,6 +157,13 @@ What sets Playroom Diet apart from typical AI demos is the **orchestrated multi-
 - Model: Gemini 3 Flash
 - Output: `ToyRecommendation` with safety decisions
 - Purpose: Validate against CPSC, substitute unsafe toys, generate shopping queries
+
+**Agent 4: `generate_play_quest`**
+- Input: Toy inventory + child's age
+- Model: Gemini 3 Flash
+- Output: `PlayQuest` with activity details
+- Purpose: Create an immediate play activity using existing toys
+- Runs in parallel with Agent 2
 
 This pipeline ensures:
 - **Separation of concerns**: Each agent has a focused task

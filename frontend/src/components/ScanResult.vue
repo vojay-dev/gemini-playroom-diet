@@ -19,6 +19,8 @@ const roadmap = computed(() => result.value?.roadmap || [])
 const skillScores = computed(() => result.value?.skill_scores || {})
 const statusQuo = computed(() => result.value?.status_quo || '')
 const toyInventory = computed(() => result.value?.toy_inventory || [])
+const playQuest = computed(() => result.value?.play_quest || null)
+const activeTab = ref('roadmap')
 
 const projectedScores = computed(() => {
   if (!skillScores.value || !roadmap.value.length) return null
@@ -98,10 +100,10 @@ onUnmounted(() => {
 
 <template>
   <div class="min-h-[calc(100vh-68px)] flex items-start justify-center p-4 py-8">
-    <!-- Single column for loading/processing/error states -->
+    <!-- Loading/error states -->
     <div v-if="status !== 'done' || !roadmap.length" class="w-full max-w-2xl space-y-4">
 
-      <!-- Loading State -->
+      <!-- Loading -->
       <div v-if="status === 'loading'" class="card bg-base-300/30 backdrop-blur-md border border-white/10 rounded-2xl">
         <div class="card-body text-center py-12">
           <span class="loading loading-spinner loading-lg text-primary"></span>
@@ -109,19 +111,19 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <!-- Processing State -->
+      <!-- Processing -->
       <div v-else-if="status === 'processing'" class="card bg-base-300/30 backdrop-blur-md border border-white/10 rounded-2xl">
         <div class="card-body flex flex-col items-center text-center py-12">
           <h2 class="text-2xl font-semibold">Analyzing your playroom...</h2>
 
-          <!-- Scanning Image -->
+          <!-- Scanning image -->
           <div v-if="imageUrl" class="relative rounded-xl overflow-hidden my-6 shadow-lg">
             <img :src="imageUrl" alt="Your playroom" class="w-72 h-52 object-cover" />
 
-            <!-- Dark overlay -->
+            <!-- Overlay -->
             <div class="absolute inset-0 bg-black/40"></div>
 
-            <!-- Sparkle stars -->
+            <!-- Sparkles -->
             <div class="sparkle s1"></div>
             <div class="sparkle s2"></div>
             <div class="sparkle s3"></div>
@@ -140,7 +142,7 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <!-- Fallback: Raw JSON if structure is unexpected -->
+      <!-- Fallback -->
       <div v-else-if="status === 'done'" class="card bg-base-300/30 backdrop-blur-md border border-white/10 rounded-2xl">
         <div class="card-body">
           <h2 class="text-2xl font-semibold text-success mb-4">Analysis Complete</h2>
@@ -151,7 +153,7 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <!-- Not Found State -->
+      <!-- Not found -->
       <div v-else-if="status === 'not_found'" class="card bg-base-300/30 backdrop-blur-md border border-white/10 rounded-2xl">
         <div class="card-body text-center py-12">
           <div class="text-6xl mb-4">🔍</div>
@@ -162,7 +164,7 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <!-- Error State -->
+      <!-- Error -->
       <div v-else-if="status === 'error'" class="card bg-base-300/30 backdrop-blur-md border border-white/10 rounded-2xl">
         <div class="card-body text-center py-12">
           <div class="text-6xl mb-4">⚠️</div>
@@ -174,9 +176,9 @@ onUnmounted(() => {
 
     </div>
 
-    <!-- Two-column layout for results -->
+    <!-- Results -->
     <div v-else class="w-full max-w-6xl">
-      <!-- Header Card (full width) -->
+      <!-- Header -->
       <div class="card bg-gradient-to-br from-primary/20 to-secondary/20 backdrop-blur-md border border-white/10 rounded-2xl mb-6">
         <div class="card-body text-center">
           <div class="text-5xl mb-2">🗺️</div>
@@ -187,23 +189,54 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <!-- Two Column Grid -->
-      <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+      <!-- Tabs -->
+      <div class="grid grid-cols-2 gap-3 mb-6">
+        <button
+          @click="activeTab = 'roadmap'"
+          :class="[
+            'flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all',
+            activeTab === 'roadmap'
+              ? 'bg-primary/30 border-primary text-primary'
+              : 'bg-base-300/50 border-white/10 hover:border-primary/50'
+          ]"
+        >
+          <span class="text-2xl">🗺️</span>
+          <span class="font-semibold">6-Month Roadmap</span>
+          <span class="text-xs opacity-60">New toys to get</span>
+        </button>
+        <button
+          v-if="playQuest"
+          @click="activeTab = 'quest'"
+          :class="[
+            'flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all',
+            activeTab === 'quest'
+              ? 'bg-accent/30 border-accent text-accent'
+              : 'bg-base-300/50 border-white/10 hover:border-accent/50'
+          ]"
+        >
+          <span class="text-2xl">🎮</span>
+          <span class="font-semibold">Play Quest</span>
+          <span class="text-xs opacity-60">Play with what you have</span>
+        </button>
+      </div>
 
-        <!-- Left Column: Roadmap Timeline (3/5 width on desktop) -->
+      <!-- Grid -->
+      <div v-if="activeTab === 'roadmap'" class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+
+        <!-- Roadmap -->
         <div class="lg:col-span-3 space-y-4">
           <div
             v-for="(item, index) in roadmap"
             :key="item.timeframe"
             class="card bg-base-300/30 backdrop-blur-md border border-white/10 rounded-2xl overflow-hidden"
           >
-            <!-- Timeline Header (always visible) -->
+            <!-- Header -->
             <div
               class="card-body cursor-pointer"
               @click="expandedItem = expandedItem === index ? -1 : index"
             >
               <div class="flex items-start gap-4">
-                <!-- Timeline indicator -->
+                <!-- Indicator -->
                 <div class="flex flex-col items-center">
                   <div :class="[
                     'w-12 h-12 rounded-full flex items-center justify-center text-2xl',
@@ -214,7 +247,7 @@ onUnmounted(() => {
                   <div v-if="index < roadmap.length - 1" class="w-0.5 h-8 bg-base-content/20 mt-2"></div>
                 </div>
 
-                <!-- Content -->
+                <!-- Body -->
                 <div class="flex-1">
                   <div class="flex items-center gap-2 flex-wrap">
                     <span :class="[
@@ -239,7 +272,7 @@ onUnmounted(() => {
                     Develops: <span class="font-semibold text-secondary">{{ item.missing_skill }}</span>
                   </p>
 
-                  <!-- Expand indicator -->
+                  <!-- Expand -->
                   <div class="flex items-center gap-1 mt-2 text-xs opacity-50">
                     <svg
                       :class="['w-4 h-4 transition-transform', expandedItem === index ? 'rotate-180' : '']"
@@ -253,11 +286,11 @@ onUnmounted(() => {
               </div>
             </div>
 
-            <!-- Expanded Content -->
+            <!-- Details -->
             <div v-if="expandedItem === index" class="px-6 pb-6 space-y-4">
               <div class="divider my-0"></div>
 
-              <!-- Reasoning -->
+              <!-- Why -->
               <div>
                 <h4 class="font-semibold flex items-center gap-2 mb-2">
                   <span>🧠</span> Why This Toy?
@@ -265,7 +298,7 @@ onUnmounted(() => {
                 <p class="text-sm text-base-content/80 leading-relaxed">{{ item.reasoning }}</p>
               </div>
 
-              <!-- Safety Context -->
+              <!-- Safety -->
               <div v-if="item.safety_context">
                 <h4 class="font-semibold flex items-center gap-2 mb-2">
                   <span>🛡️</span> Safety Check
@@ -279,12 +312,12 @@ onUnmounted(() => {
                 <p class="text-sm text-base-content/80 leading-relaxed">{{ item.safety_context }}</p>
               </div>
 
-              <!-- O*NET Reference -->
+              <!-- Reference -->
               <div class="text-xs opacity-50">
                 O*NET Skill: {{ item.missing_skill }} ({{ item.skill_id }}) • Category: {{ item.skill_category }}
               </div>
 
-              <!-- Retailer Buttons -->
+              <!-- Shop links -->
               <div class="flex flex-wrap gap-2 pt-2">
                 <a
                   v-for="retailer in getRetailers(item.amazon_search)"
@@ -303,21 +336,21 @@ onUnmounted(() => {
             </div>
           </div>
 
-          <!-- Current Status Section -->
+          <!-- Analysis -->
           <div class="collapse collapse-arrow bg-base-300/30 backdrop-blur-md border border-white/10 rounded-2xl">
             <input type="checkbox" checked />
             <div class="collapse-title text-lg font-semibold flex items-center gap-2">
               <span>📊</span> Current Playroom Analysis
             </div>
             <div class="collapse-content">
-              <!-- Heatmap Image -->
+              <!-- Heatmap -->
               <div v-if="imageUrl && toyInventory.length" class="relative rounded-xl overflow-hidden mb-4">
                 <img :src="imageUrl" alt="Your playroom" class="w-full h-auto brightness-50" />
 
-                <!-- Subtle grid overlay -->
+                <!-- Grid -->
                 <div class="absolute inset-0 ai-grid"></div>
 
-                <!-- Detection boxes -->
+                <!-- Boxes -->
                 <svg class="absolute inset-0 w-full h-full" preserveAspectRatio="none">
                   <defs>
                     <linearGradient id="boxGradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -325,9 +358,9 @@ onUnmounted(() => {
                       <stop offset="100%" stop-color="rgba(168, 85, 247, 0.4)" />
                     </linearGradient>
                   </defs>
-                  <!-- Detection rectangles with corner accents -->
+                  <!-- Rects -->
                   <g v-for="(toy, index) in toyInventory" :key="index">
-                    <!-- Fill -->
+                    <!-- fill -->
                     <rect
                       :x="`${toy.bbox.x * 100}%`"
                       :y="`${toy.bbox.y * 100}%`"
@@ -335,7 +368,7 @@ onUnmounted(() => {
                       :height="`${toy.bbox.h * 100}%`"
                       fill="url(#boxGradient)"
                     />
-                    <!-- Border -->
+                    <!-- border -->
                     <rect
                       :x="`${toy.bbox.x * 100}%`"
                       :y="`${toy.bbox.y * 100}%`"
@@ -349,7 +382,7 @@ onUnmounted(() => {
                 </svg>
               </div>
               <p class="text-base-content/80 leading-relaxed">{{ statusQuo }}</p>
-              <!-- Toy inventory legend -->
+              <!-- Legend -->
               <div v-if="toyInventory.length" class="mt-4 pt-4 border-t border-white/10">
                 <p class="text-sm font-semibold mb-2">Detected Items:</p>
                 <div class="flex flex-wrap gap-2">
@@ -366,9 +399,9 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <!-- Right Column: Radar Chart & Actions (2/5 width on desktop) -->
+        <!-- Sidebar -->
         <div class="lg:col-span-2 space-y-4">
-          <!-- Skill Radar Chart -->
+          <!-- Radar -->
           <div class="card bg-base-300/30 backdrop-blur-md border border-white/10 rounded-2xl">
             <div class="card-body">
               <h2 class="text-lg font-semibold flex items-center gap-2 mb-2">
@@ -384,7 +417,7 @@ onUnmounted(() => {
             </div>
           </div>
 
-          <!-- Quick Stats -->
+          <!-- Stats -->
           <div class="card bg-base-300/30 backdrop-blur-md border border-white/10 rounded-2xl">
             <div class="card-body">
               <h2 class="text-lg font-semibold flex items-center gap-2 mb-4">
@@ -413,7 +446,7 @@ onUnmounted(() => {
             </div>
           </div>
 
-          <!-- Share Card -->
+          <!-- Share -->
           <div class="card bg-gradient-to-br from-secondary/20 to-accent/20 backdrop-blur-md border border-white/10 rounded-2xl">
             <div class="card-body text-center">
               <h2 class="text-lg font-semibold">Share Your Results</h2>
@@ -430,7 +463,71 @@ onUnmounted(() => {
 
       </div>
 
-      <!-- Full-width footer section -->
+      <!-- Quest -->
+      <div v-else-if="activeTab === 'quest' && playQuest" class="max-w-2xl mx-auto">
+        <div class="card bg-gradient-to-br from-accent/20 to-secondary/20 backdrop-blur-md border border-white/10 rounded-2xl">
+          <div class="card-body">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="text-4xl">🎮</div>
+              <div>
+                <h2 class="text-2xl font-bold" style="font-family: 'Fredoka', sans-serif;">
+                  {{ playQuest.title }}
+                </h2>
+                <p class="text-sm opacity-70">
+                  Develops: <span class="font-semibold text-secondary">{{ playQuest.target_skill }}</span>
+                </p>
+              </div>
+            </div>
+
+            <div class="flex flex-wrap gap-2 mb-4">
+              <div class="badge badge-outline gap-1">
+                <span>⏱️</span> {{ playQuest.duration_minutes }} min
+              </div>
+              <div class="badge badge-outline gap-1">
+                <span>🧠</span> {{ playQuest.skill_id }}
+              </div>
+            </div>
+
+            <div class="space-y-4">
+              <div>
+                <h3 class="font-semibold flex items-center gap-2 mb-2">
+                  <span>🧸</span> Toys Needed
+                </h3>
+                <div class="flex flex-wrap gap-2">
+                  <span v-for="toy in playQuest.toys_needed" :key="toy" class="badge badge-primary">
+                    {{ toy }}
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <h3 class="font-semibold flex items-center gap-2 mb-2">
+                  <span>📋</span> Setup
+                </h3>
+                <p class="text-base-content/80">{{ playQuest.setup }}</p>
+              </div>
+
+              <div>
+                <h3 class="font-semibold flex items-center gap-2 mb-2">
+                  <span>🎯</span> Instructions
+                </h3>
+                <ol class="list-decimal list-inside space-y-2 text-base-content/80">
+                  <li v-for="(step, i) in playQuest.instructions" :key="i">{{ step }}</li>
+                </ol>
+              </div>
+
+              <div class="bg-base-100/30 rounded-lg p-4 mt-4">
+                <p class="text-sm">
+                  <span class="font-semibold">💡 Parent Tip:</span>
+                  {{ playQuest.parent_tip }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
       <div class="mt-6 mb-12 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-base-300/20 backdrop-blur-sm border border-white/5">
         <p class="font-mono text-xs opacity-40">Scan ID: {{ scanId }}</p>
         <RouterLink to="/" class="btn btn-primary gap-2">
@@ -442,7 +539,7 @@ onUnmounted(() => {
         </RouterLink>
       </div>
 
-      <!-- Share Modal -->
+      <!-- Modal -->
       <ShareCard
         v-if="showShareModal"
         :roadmap="roadmap"
@@ -454,7 +551,7 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-/* 4-point star sparkle */
+/* sparkle */
 .sparkle {
   position: absolute;
   width: 4px;
@@ -486,7 +583,7 @@ onUnmounted(() => {
   top: 1px;
 }
 
-/* Position each sparkle */
+/* positions */
 .s1 { top: 20%; left: 15%; animation-delay: 0s; }
 .s2 { top: 60%; left: 75%; animation-delay: 0.4s; }
 .s3 { top: 35%; left: 55%; animation-delay: 0.8s; }
@@ -504,7 +601,7 @@ onUnmounted(() => {
   }
 }
 
-/* AI-style grid overlay */
+/* grid */
 .ai-grid {
   background-image:
     linear-gradient(rgba(34, 211, 238, 0.1) 1px, transparent 1px),

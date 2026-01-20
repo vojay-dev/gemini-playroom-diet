@@ -71,9 +71,9 @@ const handleSubmit = async () => {
 
     <div class="hero-content flex-col lg:flex-row-reverse lg:items-stretch gap-8 relative z-10">
 
-      <!-- Text Section with glass card -->
+      <!-- Info -->
       <div class="bg-base-300/30 backdrop-blur-md border border-white/10 rounded-2xl text-center lg:text-left w-full max-w-md flex flex-col justify-start overflow-hidden">
-        <!-- Header -->
+        <!-- header -->
         <div class="bg-gradient-to-r from-secondary/20 to-primary/20 px-8 py-5 border-b border-white/10">
           <h1 class="text-4xl font-semibold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent" style="font-family: 'Fredoka', sans-serif;">
             Playroom Diet
@@ -83,12 +83,12 @@ const handleSubmit = async () => {
 
         <div class="p-6">
           <p class="text-base mb-6">
-            Turn your chaotic toy pile into a
+            Turn toy chaos into a
             <span class="font-bold text-primary">science-backed</span>
-            development plan. We use AI to audit your toys and find the missing skills.
+            growth plan. Get a 6-month roadmap, plus a Play Quest to start today with what you have.
           </p>
 
-          <!-- Built with badges -->
+          <!-- Tech stack -->
           <p class="text-xs opacity-50 mb-3">Built with:</p>
           <div class="flex flex-wrap justify-center gap-3 mb-5">
             <div class="badge badge-md badge-soft badge-primary gap-1 p-2">
@@ -117,7 +117,7 @@ const handleSubmit = async () => {
             </div>
           </div>
 
-          <!-- Quick Links -->
+          <!-- Links -->
           <div class="border-t border-white/10 pt-5">
             <p class="text-xs opacity-50 mb-3">Explore more:</p>
             <div class="flex gap-2 flex-wrap justify-center lg:justify-start">
@@ -138,9 +138,9 @@ const handleSubmit = async () => {
         </div>
       </div>
 
-      <!-- The Form Card (glassmorphism) -->
+      <!-- Form -->
       <div class="card w-full max-w-md bg-base-300/30 backdrop-blur-md border border-white/10 rounded-2xl overflow-hidden">
-        <!-- Card Header -->
+        <!-- header -->
         <div class="bg-gradient-to-r from-primary/20 to-secondary/20 px-6 py-4 border-b border-white/10">
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
@@ -157,7 +157,7 @@ const handleSubmit = async () => {
 
         <form class="card-body pt-4" @submit.prevent="handleSubmit">
 
-          <!-- Step 1: Age Input -->
+          <!-- Age -->
           <div class="form-control">
             <label class="label pb-3">
               <span class="label-text font-semibold flex items-center gap-2">
@@ -186,7 +186,7 @@ const handleSubmit = async () => {
             </div>
           </div>
 
-          <!-- Step 2: File Input -->
+          <!-- Photo -->
           <div class="form-control mt-4">
             <label class="label pb-3">
               <span class="label-text font-semibold flex items-center gap-2">
@@ -195,14 +195,14 @@ const handleSubmit = async () => {
               </span>
             </label>
 
-            <!-- Custom File Area -->
+            <!-- Upload -->
             <div class="flex flex-col items-center justify-center w-full">
                 <label for="dropzone-file" class="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed rounded-lg cursor-pointer bg-base-200/50 hover:bg-base-300/50 border-base-content/20 hover:border-primary/50 transition-all relative overflow-hidden group">
 
-                    <!-- Preview Image (If exists) -->
+                    <!-- Preview -->
                     <img v-if="previewUrl" :src="previewUrl" class="absolute inset-0 w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform" />
 
-                    <!-- Placeholder UI -->
+                    <!-- Placeholder -->
                     <div v-else class="flex flex-col items-center justify-center pt-5 pb-6 text-base-content/50">
                         <svg class="w-8 h-8 mb-3 text-primary/50" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
                             <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
@@ -211,7 +211,7 @@ const handleSubmit = async () => {
                         <p class="text-xs">PNG, JPG or take a photo</p>
                     </div>
 
-                    <!-- Actual Input (Hidden) -->
+                    <!-- Input -->
                     <input
                       id="dropzone-file"
                       type="file"
@@ -223,7 +223,7 @@ const handleSubmit = async () => {
                 </label>
             </div>
 
-            <!-- Example Images -->
+            <!-- Examples -->
             <div class="mt-3">
               <div class="flex items-center gap-2 mb-2">
                 <div class="flex-1 h-px bg-base-content/20"></div>
@@ -248,7 +248,7 @@ const handleSubmit = async () => {
             </div>
           </div>
 
-          <!-- Submit Button -->
+          <!-- Submit -->
           <div class="form-control mt-5">
             <button class="btn btn-primary gap-2" :disabled="isSubmitting">
               <span v-if="isSubmitting" class="loading loading-spinner loading-sm"></span>
@@ -259,7 +259,7 @@ const handleSubmit = async () => {
             </button>
           </div>
 
-          <!-- What you get preview -->
+          <!-- Preview -->
           <div class="mt-4 pt-4 border-t border-white/10">
             <p class="text-xs text-center opacity-50 mb-2">You'll receive:</p>
             <div class="flex justify-center gap-4 text-xs">

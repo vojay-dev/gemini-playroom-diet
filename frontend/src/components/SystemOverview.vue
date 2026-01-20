@@ -12,9 +12,7 @@ import '@vue-flow/controls/dist/style.css'
 
 const { fitView } = useVueFlow()
 
-// Node positions - matching user's manual layout
 const nodes = ref([
-  // Top: User -> Frontend -> Backend (center column)
   {
     id: 'user',
     type: 'custom',
@@ -33,16 +31,12 @@ const nodes = ref([
     position: { x: 350, y: 200 },
     data: { label: 'FastAPI Backend', icon: '⚡', category: 'backend', tech: 'Python + FastAPI' }
   },
-
-  // Middle left: Airflow
   {
     id: 'airflow',
     type: 'custom',
     position: { x: 150, y: 320 },
     data: { label: 'Airflow', icon: '🌀', category: 'orchestration', tech: 'Apache Airflow' }
   },
-
-  // Middle right: Supabase Storage -> Database (vertical)
   {
     id: 'supabase-storage',
     type: 'custom',
@@ -52,11 +46,9 @@ const nodes = ref([
   {
     id: 'supabase-db',
     type: 'custom',
-    position: { x: 550, y: 440 },
+    position: { x: 550, y: 480 },
     data: { label: 'Database', icon: '🗄️', category: 'storage', tech: 'Supabase PostgreSQL' }
   },
-
-  // AI Agents (diagonal staircase pattern)
   {
     id: 'agent-vision',
     type: 'custom',
@@ -66,19 +58,24 @@ const nodes = ref([
   {
     id: 'agent-recommend',
     type: 'custom',
-    position: { x: 120, y: 520 },
+    position: { x: 0, y: 530 },
     data: { label: 'Toy Recommender', icon: '🧸', category: 'ai', tech: 'Gemini 3 Flash' }
+  },
+  {
+    id: 'agent-playquest',
+    type: 'custom',
+    position: { x: 200, y: 530 },
+    data: { label: 'Play Quest', icon: '🎮', category: 'ai', tech: 'Gemini 3 Flash' }
   },
   {
     id: 'agent-safety',
     type: 'custom',
-    position: { x: 190, y: 620 },
+    position: { x: 0, y: 640 },
     data: { label: 'Safety Checker', icon: '🛡️', category: 'ai', tech: 'Gemini 3 Flash' }
   }
 ])
 
 const edges = ref([
-  // Top vertical flow: User -> Frontend -> Backend
   {
     id: 'e-user-frontend',
     source: 'user',
@@ -95,8 +92,6 @@ const edges = ref([
     animated: true,
     style: { stroke: '#6366f1', strokeWidth: 2 }
   },
-
-  // Backend splits: left to Airflow, right to Storage
   {
     id: 'e-backend-airflow',
     source: 'backend',
@@ -113,8 +108,6 @@ const edges = ref([
     animated: true,
     style: { stroke: '#22c55e', strokeWidth: 2 }
   },
-
-  // Storage -> Database (vertical)
   {
     id: 'e-storage-db',
     source: 'supabase-storage',
@@ -123,8 +116,6 @@ const edges = ref([
     animated: true,
     style: { stroke: '#22c55e', strokeWidth: 2 }
   },
-
-  // Airflow -> Agents (down then horizontal chain)
   {
     id: 'e-airflow-vision',
     source: 'airflow',
@@ -142,6 +133,14 @@ const edges = ref([
     style: { stroke: '#ec4899', strokeWidth: 2 }
   },
   {
+    id: 'e-vision-playquest',
+    source: 'agent-vision',
+    target: 'agent-playquest',
+    type: 'default',
+    animated: true,
+    style: { stroke: '#ec4899', strokeWidth: 2 }
+  },
+  {
     id: 'e-recommend-safety',
     source: 'agent-recommend',
     target: 'agent-safety',
@@ -149,8 +148,6 @@ const edges = ref([
     animated: true,
     style: { stroke: '#ec4899', strokeWidth: 2 }
   },
-
-  // Safety -> Database (right side to bottom, curved)
   {
     id: 'e-safety-db',
     source: 'agent-safety',
@@ -160,10 +157,19 @@ const edges = ref([
     type: 'default',
     animated: true,
     style: { stroke: '#22c55e', strokeWidth: 2 }
+  },
+  {
+    id: 'e-playquest-db',
+    source: 'agent-playquest',
+    target: 'supabase-db',
+    sourceHandle: 'right-source',
+    targetHandle: 'bottom-target',
+    type: 'default',
+    animated: true,
+    style: { stroke: '#22c55e', strokeWidth: 2 }
   }
 ])
 
-// Category colors for minimap
 const nodeColor = (node) => {
   const colors = {
     user: '#6366f1',

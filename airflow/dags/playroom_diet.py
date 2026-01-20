@@ -61,7 +61,17 @@ class ToyRecommendationItem(BaseModel):
     amazon_search: str
 
 class ToyRecommendation(BaseModel):
-    items: list[ToyRecommendationItem]  # Exactly 3 items
+    items: list[ToyRecommendationItem]
+
+class PlayQuest(BaseModel):
+    title: str
+    target_skill: str
+    skill_id: str
+    duration_minutes: int
+    toys_needed: list[str]
+    setup: str
+    instructions: list[str]
+    parent_tip: str
 
 def get_image_bytes(image_path: str) -> bytes:
     image_url = f"{supabase_project_url}/storage/v1/object/public/playroom-images/{image_path}"
@@ -114,6 +124,38 @@ def process_scans():
         ]
 
     toy_inventories = analyze_image.expand(scan_record=_get_new_scans.output)
+
+    @task.llm(
+        model="gemini-3-flash-preview",
+        output_type=PlayQuest,
+        system_prompt="""
+            You are a creative Play Coach who designs fun, engaging activities for children using their existing toys.
+
+            **Your task:**
+            Create ONE "Play Quest" - a structured play activity that:
+            1. Uses 2-4 toys from the provided inventory (no new purchases needed)
+            2. Targets a specific O*NET cognitive or physical ability
+            3. Is age-appropriate, fun, and takes 10-30 minutes
+            4. Includes clear instructions parents can follow
+
+            **Output format:**
+            - title: A fun, adventure-style name (e.g., "The Tower Challenge", "Treasure Hunt Adventure")
+            - target_skill: The O*NET ability name being developed
+            - skill_id: The O*NET ID (e.g., "1.A.1.f.2")
+            - duration_minutes: Estimated time (10-30)
+            - toys_needed: List of 2-4 toys from the inventory to use
+            - setup: One paragraph on how to prepare the activity
+            - instructions: 3-5 clear steps for the activity
+            - parent_tip: One sentence on how to make it more engaging or educational
+        """
+    )
+    def generate_play_quest(zipped_input: tuple):
+        toy_inventory, scan_record = zipped_input
+        child_age = scan_record[2]
+        return json.dumps({"toys": toy_inventory.get("items", []), "child_age": child_age})
+
+    zipped_quest_input = toy_inventories.zip(_get_new_scans.output)
+    play_quests = generate_play_quest.expand(zipped_input=zipped_quest_input)
 
     @task.llm(
         model="gemini-3-flash-preview",
@@ -214,14 +256,11 @@ def process_scans():
 
     @task
     def save_result(zipped_input: tuple):
-        toy_inventory, analysis_result, toy_recommendation, scan_record = zipped_input
+        toy_inventory, play_quest, analysis_result, toy_recommendation, scan_record = zipped_input
         scan_id = str(scan_record[0])
-
-        # Merge roadmap with safety recommendations
         roadmap_items = analysis_result.get("roadmap", [])
         safety_items = toy_recommendation.get("items", [])
 
-        # Create merged roadmap with both analysis and safety info
         merged_roadmap = []
         for i, roadmap_item in enumerate(roadmap_items):
             safety_item = safety_items[i] if i < len(safety_items) else {}
@@ -237,7 +276,8 @@ def process_scans():
             "status_quo": analysis_result.get("status_quo", ""),
             "skill_scores": analysis_result.get("skill_scores", {}),
             "roadmap": merged_roadmap,
-            "toy_inventory": toy_inventory.get("items", [])
+            "toy_inventory": toy_inventory.get("items", []),
+            "play_quest": play_quest
         }
         supabase = create_client(supabase_project_url, supabase_secret_key)
 
@@ -246,7 +286,7 @@ def process_scans():
             "results_json": payload
         }).eq("id", scan_id).execute()
 
-    zipped_input_save = toy_inventories.zip(analysis_results, recommendations, _get_new_scans.output)
+    zipped_input_save = toy_inventories.zip(play_quests, analysis_results, recommendations, _get_new_scans.output)
     save_result.expand(zipped_input=zipped_input_save)
 
 process_scans()
