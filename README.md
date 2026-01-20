@@ -11,6 +11,8 @@
 
 _Keep in mind: this is a hackathon prototype. Daily limits apply to control costs._
 
+![Playroom Mockup](doc/mockup.png)
+
 ---
 
 ## tl;dr for Judges
@@ -85,6 +87,8 @@ The results page displays your original image with an AI-style detection overlay
 
 ### 7. Play Quest
 Don't wait for new toys to arrive. A dedicated AI agent creates a fun, structured play activity using toys you already own. Each quest targets a specific O*NET skill, includes step-by-step instructions, and gives parents tips to maximize engagement. Start improving development today.
+
+![Playroom Screenshots](doc/screenshots.png)
 
 <!-- TODO: Add screenshots -->
 <!-- ![Skill Radar](https://files.janz.sh/playroom-diet/skill-radar.png) -->
