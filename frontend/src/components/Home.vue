@@ -73,7 +73,7 @@ const handleSubmit = async () => {
 
       <!-- Info -->
       <div class="bg-base-300/30 backdrop-blur-md border border-white/10 rounded-2xl text-center lg:text-left w-full max-w-md flex flex-col justify-start overflow-hidden">
-        <!-- header -->
+        <!-- Header -->
         <div class="bg-gradient-to-r from-secondary/20 to-primary/20 px-8 py-5 border-b border-white/10">
           <h1 class="text-4xl font-semibold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent" style="font-family: 'Fredoka', sans-serif;">
             Playroom Diet
@@ -140,7 +140,7 @@ const handleSubmit = async () => {
 
       <!-- Form -->
       <div class="card w-full max-w-md bg-base-300/30 backdrop-blur-md border border-white/10 rounded-2xl overflow-hidden">
-        <!-- header -->
+        <!-- Header -->
         <div class="bg-gradient-to-r from-primary/20 to-secondary/20 px-6 py-4 border-b border-white/10">
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">

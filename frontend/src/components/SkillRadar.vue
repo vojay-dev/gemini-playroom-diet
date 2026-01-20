@@ -6,7 +6,6 @@ const props = defineProps({
     type: Object,
     required: true
   },
-  // Optional: show projected improvement from roadmap
   projectedScores: {
     type: Object,
     default: null
@@ -76,7 +75,7 @@ const axisLines = computed(() => {
   })
 })
 
-// Label positions (slightly outside the chart)
+// Label positions
 const labelPositions = computed(() => {
   return skills.map((skill, i) => {
     const point = getPoint(i, 120)
@@ -116,7 +115,7 @@ const labelPositions = computed(() => {
         />
       </g>
 
-      <!-- Projected improvement area (if provided) -->
+      <!-- Projected improvement area -->
       <polygon
         v-if="projectedPoints"
         :points="projectedPoints"

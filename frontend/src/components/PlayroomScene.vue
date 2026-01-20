@@ -9,7 +9,6 @@ let animationId = null
 let toys = []
 let raycaster, mouse
 
-// Colors - modern playful palette
 const COLORS = {
   red: 0xE74C3C,
   blue: 0x3498DB,

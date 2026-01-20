@@ -4,7 +4,7 @@ import { RouterLink } from 'vue-router'
 
 <template>
   <div class="min-h-[calc(100vh-68px-40px)] pb-16">
-    <!-- Hero Section -->
+    <!-- Hero section -->
     <div class="hero py-16 bg-base-300/30">
       <div class="hero-content text-center">
         <div class="max-w-2xl">
@@ -26,7 +26,7 @@ import { RouterLink } from 'vue-router'
       </div>
     </div>
 
-    <!-- Problem Section -->
+    <!-- Problem section -->
     <div class="py-16 px-4">
       <div class="max-w-4xl mx-auto">
         <h2 class="text-3xl font-bold text-center mb-8" style="font-family: 'Fredoka', sans-serif;">
@@ -55,7 +55,7 @@ import { RouterLink } from 'vue-router'
       </div>
     </div>
 
-    <!-- Solution Section -->
+    <!-- Solution section -->
     <div class="py-16 px-4 bg-base-300/20">
       <div class="max-w-4xl mx-auto">
         <h2 class="text-3xl font-bold text-center mb-8" style="font-family: 'Fredoka', sans-serif;">
@@ -103,7 +103,7 @@ import { RouterLink } from 'vue-router'
       </div>
     </div>
 
-    <!-- Skills Section -->
+    <!-- Skills section -->
     <div class="py-16 px-4">
       <div class="max-w-4xl mx-auto">
         <h2 class="text-3xl font-bold text-center mb-8" style="font-family: 'Fredoka', sans-serif;">
@@ -159,7 +159,7 @@ import { RouterLink } from 'vue-router'
       </div>
     </div>
 
-    <!-- Tech Stack Section -->
+    <!-- Tech stack section -->
     <div class="py-16 px-4 bg-base-300/20">
       <div class="max-w-4xl mx-auto">
         <h2 class="text-3xl font-bold text-center mb-8" style="font-family: 'Fredoka', sans-serif;">
@@ -202,7 +202,7 @@ import { RouterLink } from 'vue-router'
       </div>
     </div>
 
-    <!-- Features Section -->
+    <!-- Features section -->
     <div class="py-16 px-4">
       <div class="max-w-4xl mx-auto">
         <h2 class="text-3xl font-bold text-center mb-8" style="font-family: 'Fredoka', sans-serif;">
@@ -255,7 +255,7 @@ import { RouterLink } from 'vue-router'
       </div>
     </div>
 
-    <!-- CTA Section -->
+    <!-- CTA section -->
     <div class="py-16 px-4 bg-base-300/20">
       <div class="max-w-2xl mx-auto text-center">
         <h2 class="text-3xl font-bold mb-4" style="font-family: 'Fredoka', sans-serif;">

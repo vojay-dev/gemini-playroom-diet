@@ -99,7 +99,7 @@ const resetAndClose = () => {
   <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
     <div class="bg-base-200 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-auto">
 
-      <!-- Modal Header -->
+      <!-- Modal header -->
       <div class="p-4 border-b border-base-300 flex items-center justify-between">
         <h2 class="text-xl font-bold">Share Your Results</h2>
         <button @click="resetAndClose" class="btn btn-ghost btn-sm btn-circle">
@@ -109,7 +109,7 @@ const resetAndClose = () => {
         </button>
       </div>
 
-      <!-- Card Preview -->
+      <!-- Card preview -->
       <div class="p-4">
         <!-- The actual card that will be captured - using inline styles for html2canvas compatibility -->
         <div
@@ -126,7 +126,7 @@ const resetAndClose = () => {
             <p style="font-size: 11px; color: rgba(255,255,255,0.6); margin: 4px 0 0 0;">AI-Powered Child Development</p>
           </div>
 
-          <!-- Roadmap Summary -->
+          <!-- Roadmap summary -->
           <div style="background: rgba(255,255,255,0.1); border-radius: 8px; padding: 16px; margin-bottom: 16px;">
             <h2 style="font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.8); margin: 0 0 12px 0;">🗺️ My 6-Month Roadmap</h2>
             <div style="display: flex; flex-direction: column; gap: 8px;">
@@ -145,7 +145,7 @@ const resetAndClose = () => {
             </div>
           </div>
 
-          <!-- Skill Highlights -->
+          <!-- Skill highlights -->
           <div style="background: rgba(255,255,255,0.1); border-radius: 8px; padding: 16px; margin-bottom: 16px;">
             <h2 style="font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.8); margin: 0 0 12px 0;">📈 Top Skills</h2>
             <div style="display: flex; justify-content: space-around;">

@@ -25,7 +25,7 @@ const fetchLimits = async () => {
       dailyLimit.value = data.daily_scan_limit
     }
   } catch (e) {
-    // silently fail - limits display is non-critical
+    // Silently fail - limits display is non-critical
   }
 }
 
@@ -53,10 +53,10 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <!-- Playroom Wall Pattern Background -->
+  <!-- Background -->
   <div class="playroom-wall fixed inset-0 z-0"></div>
 
-  <!-- Global 3D Background -->
+  <!-- Playroom background -->
   <PlayroomScene class="!fixed inset-0 z-[1] pointer-events-none" />
 
   <header class="relative z-20">
@@ -79,7 +79,7 @@ onUnmounted(() => {
         <a class="btn btn-ghost text-xl">Gemini Playroom Diet</a>
       </div>
       <div class="navbar-end gap-2">
-        <!-- Usage Display -->
+        <!-- Usage display -->
         <div class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-base-100/50 border border-white/10 text-sm">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -88,9 +88,9 @@ onUnmounted(() => {
             {{ scansToday }}/{{ dailyLimit }}
           </span>
         </div>
-        <!-- Theme Toggle: Boy (night) / Girl (dracula) -->
+        <!-- Theme toggle -->
         <label class="swap swap-rotate btn btn-ghost btn-circle" @click="toggleTheme">
-          <!-- Boy icon (night theme) -->
+          <!-- Boy icon -->
           <svg
             :class="isNightTheme ? 'swap-off' : 'swap-on'"
             class="h-6 w-6 fill-current"
@@ -98,7 +98,7 @@ onUnmounted(() => {
             viewBox="0 0 24 24">
             <path d="M12 2C9.24 2 7 4.24 7 7s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zm0 8c-1.65 0-3-1.35-3-3s1.35-3 3-3 3 1.35 3 3-1.35 3-3 3zm0 4c-4.42 0-8 1.79-8 4v2h16v-2c0-2.21-3.58-4-8-4z"/>
           </svg>
-          <!-- Girl icon (dracula theme) -->
+          <!-- Girl icon -->
           <svg
             :class="isNightTheme ? 'swap-on' : 'swap-off'"
             class="h-6 w-6 fill-current"
@@ -132,7 +132,6 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-/* Playroom - soft colorful confetti/sprinkles pattern */
 .playroom-wall {
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #1a1a2e 100%);
   background-attachment: fixed;

@@ -222,7 +222,7 @@ const nodeColor = (node) => {
       :default-viewport="{ zoom: 1 }"
       class="vue-flow-wrapper"
     >
-      <!-- Custom Node Template -->
+      <!-- Custom node template -->
       <template #node-custom="{ data }">
         <Handle type="target" :position="Position.Top" class="handle-hidden" />
         <Handle type="target" :position="Position.Left" class="handle-hidden" />
