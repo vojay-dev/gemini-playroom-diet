@@ -1,6 +1,9 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { domToPng } from 'modern-screenshot'
+import { useToast } from '../composables/useToast'
+
+const toast = useToast()
 
 const props = defineProps({
   roadmap: {
@@ -57,7 +60,7 @@ const generateImage = async () => {
     isGenerated.value = true
   } catch (e) {
     console.error('Failed to generate image:', e)
-    alert('Failed to generate image. Please try again.')
+    toast.error('Failed to generate image. Please try again.')
   } finally {
     isGenerating.value = false
   }
@@ -81,10 +84,10 @@ const copyToClipboard = async () => {
     await navigator.clipboard.write([
       new ClipboardItem({ 'image/png': blob })
     ])
-    alert('Image copied to clipboard!')
+    toast.success('Image copied to clipboard!')
   } catch (e) {
     console.error('Failed to copy:', e)
-    alert('Failed to copy to clipboard. Try downloading instead.')
+    toast.error('Failed to copy. Try downloading instead.')
   }
 }
 

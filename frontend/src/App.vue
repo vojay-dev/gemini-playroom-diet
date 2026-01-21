@@ -1,9 +1,12 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import PlayroomScene from './components/PlayroomScene.vue'
+import { useToast } from './composables/useToast'
+
+const { toasts } = useToast()
 
 const isNightTheme = ref(true)
-const scansToday = ref(0)
+const scansToday = ref(null)
 const dailyLimit = ref(20)
 const dropdownRef = ref(null)
 let limitsInterval = null
@@ -81,12 +84,18 @@ onUnmounted(() => {
       <div class="navbar-end gap-2">
         <!-- Usage display -->
         <div class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-base-100/50 border border-white/10 text-sm">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-          </svg>
-          <span class="font-mono" :class="usagePercent >= 90 ? 'text-error' : usagePercent >= 70 ? 'text-warning' : 'text-success'">
-            {{ scansToday }}/{{ dailyLimit }}
-          </span>
+          <template v-if="scansToday === null">
+            <span class="loading loading-spinner loading-xs"></span>
+            <span class="text-xs opacity-70">Connecting...</span>
+          </template>
+          <template v-else>
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            <span class="font-mono" :class="usagePercent >= 90 ? 'text-error' : usagePercent >= 70 ? 'text-warning' : 'text-success'">
+              {{ scansToday }}/{{ dailyLimit }}
+            </span>
+          </template>
         </div>
         <!-- Theme toggle -->
         <label class="swap swap-rotate btn btn-ghost btn-circle" @click="toggleTheme">
@@ -113,6 +122,22 @@ onUnmounted(() => {
   <main class="relative z-10">
     <RouterView />
   </main>
+
+  <!-- Toast container -->
+  <div class="toast toast-bottom toast-end z-50 mb-12">
+    <div
+      v-for="t in toasts"
+      :key="t.id"
+      class="alert shadow-lg"
+      :class="{
+        'bg-error text-error-content': t.type === 'error',
+        'bg-success text-success-content': t.type === 'success',
+        'bg-warning text-warning-content': t.type === 'warning'
+      }"
+    >
+      <span>{{ t.message }}</span>
+    </div>
+  </div>
   <footer class="footer footer-center p-1 px-2 text-neutral-content fixed bottom-0 z-50 bg-base-300/30 backdrop-blur-md border-t border-white/10">
     <aside class="items-center grid-flow-col">
       <p>© 2026 Volker Janz</p>

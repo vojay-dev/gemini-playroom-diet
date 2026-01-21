@@ -1,8 +1,10 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
+import { useToast } from '../composables/useToast'
 
 const router = useRouter()
+const toast = useToast()
 const age = ref(4)
 const file = ref(null)
 const previewUrl = ref(null)
@@ -35,7 +37,7 @@ const selectExample = async (exampleSrc) => {
 }
 
 const handleSubmit = async () => {
-  if (!file.value) return alert("Please select a photo first!")
+  if (!file.value) return toast.error("Please select a photo first!")
 
   isSubmitting.value = true
 
@@ -59,7 +61,7 @@ const handleSubmit = async () => {
 
   } catch (e) {
     console.error(e)
-    alert("Error uploading scan. Is the backend running?")
+    toast.error("Error uploading scan. Please try again.")
   } finally {
     isSubmitting.value = false
   }
