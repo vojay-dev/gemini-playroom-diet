@@ -18,17 +18,28 @@ from airflow import AirflowClient
 
 load_dotenv()
 
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_SECRET_KEY = os.getenv("SUPABASE_SECRET_KEY")
-if not SUPABASE_URL or not SUPABASE_SECRET_KEY:
-    raise ValueError("Missing SUPABASE_URL or SUPABASE_SECRET_KEY")
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_SECRET_KEY)
+supabase: Client | None = None
+airflow_client: AirflowClient | None = None
 
-AIRFLOW_HOST = os.getenv("AIRFLOW_HOST", "http://localhost:8080")
-AIRFLOW_USERNAME = os.getenv("AIRFLOW_USERNAME", "airflow")
-AIRFLOW_PASSWORD = os.getenv("AIRFLOW_PASSWORD", "airflow")
-AIRFLOW_STATIC_TOKEN = os.getenv("AIRFLOW_STATIC_TOKEN") or None
-airflow_client = AirflowClient(AIRFLOW_HOST, AIRFLOW_USERNAME, AIRFLOW_PASSWORD, AIRFLOW_STATIC_TOKEN)
+def get_supabase() -> Client:
+    global supabase
+    if supabase is None:
+        url = os.getenv("SUPABASE_URL", "")
+        key = os.getenv("SUPABASE_SECRET_KEY", "")
+        if not url or not key:
+            raise ValueError("Missing SUPABASE_URL or SUPABASE_SECRET_KEY")
+        supabase = create_client(url, key)
+    return supabase
+
+def get_airflow() -> AirflowClient:
+    global airflow_client
+    if airflow_client is None:
+        host = os.getenv("AIRFLOW_HOST", "http://localhost:8080")
+        username = os.getenv("AIRFLOW_USERNAME", "airflow")
+        password = os.getenv("AIRFLOW_PASSWORD", "airflow")
+        token = os.getenv("AIRFLOW_STATIC_TOKEN") or None
+        airflow_client = AirflowClient(host, username, password, token)
+    return airflow_client
 
 DAILY_SCAN_LIMIT = int(os.getenv("DAILY_SCAN_LIMIT", "20"))
 GET_RATE_LIMIT = os.getenv("GET_RATE_LIMIT", "30/minute")
@@ -61,7 +72,7 @@ def get_today_scan_count(bypass_cache: bool = False) -> int:
         return _scan_count_cache["count"]
 
     today_start = date.today().isoformat()
-    result = supabase.table("scans").select("id", count="exact").gte("created_at", today_start).execute()
+    result = get_supabase().table("scans").select("id", count="exact").gte("created_at", today_start).execute()
     count = result.count or 0
 
     _scan_count_cache["count"] = count
@@ -89,7 +100,7 @@ def get_limits(request: Request):
 @limiter.limit(GET_RATE_LIMIT)
 def get_scan(request: Request, scan_id: str):
     try:
-        result = supabase.table("scans").select("*").eq("id", scan_id).execute()
+        result = get_supabase().table("scans").select("*").eq("id", scan_id).execute()
     except APIError:
         raise HTTPException(status_code=404, detail="Scan not found")
 
@@ -97,7 +108,7 @@ def get_scan(request: Request, scan_id: str):
         raise HTTPException(status_code=404, detail="Scan not found")
 
     scan = result.data[0]
-    image_url = supabase.storage.from_("playroom-images").get_public_url(scan["image_path"]) if scan.get("image_path") else None
+    image_url = get_supabase().storage.from_("playroom-images").get_public_url(scan["image_path"]) if scan.get("image_path") else None
 
     return {
         "scan_id": scan_id,
@@ -118,7 +129,7 @@ async def create_scan(
         file_content = await file.read()
         image_hash = hashlib.sha256(file_content).hexdigest()
 
-        existing = supabase.table("scans").select("id, status").eq("image_hash", image_hash).execute()
+        existing = get_supabase().table("scans").select("id, status").eq("image_hash", image_hash).execute()
         if existing.data:
             existing_scan = existing.data[0]
             return {"scan_id": existing_scan["id"], "cached": True, "status": existing_scan["status"]}
@@ -131,13 +142,13 @@ async def create_scan(
         file_ext = file.filename.split(".")[-1]
         file_path = f"scans/{scan_id}.{file_ext}"
 
-        supabase.storage.from_("playroom-images").upload(
+        get_supabase().storage.from_("playroom-images").upload(
             path=file_path,
             file=file_content,
             file_options={"content-type": file.content_type or "image/jpeg"}
         )
 
-        supabase.table("scans").insert({
+        get_supabase().table("scans").insert({
             "id": scan_id,
             "child_age": age,
             "image_path": file_path,
@@ -146,7 +157,7 @@ async def create_scan(
             "created_at": datetime.now().isoformat()
         }).execute()
 
-        dag_run_id = airflow_client.trigger_dag("process_scans")
+        dag_run_id = get_airflow().trigger_dag("process_scans")
         return {"scan_id": scan_id, "dag_run_id": dag_run_id, "cached": False}
     except HTTPException:
         raise
