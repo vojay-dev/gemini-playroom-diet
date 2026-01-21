@@ -79,7 +79,9 @@ onUnmounted(() => {
         </div>
       </div>
       <div class="navbar-center">
-        <a class="btn btn-ghost text-xl">Gemini Playroom Diet</a>
+        <RouterLink to="/" class="text-xl font-semibold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent hover:opacity-80 hover:scale-105 transition-all" style="font-family: 'Fredoka', sans-serif;">
+          Playroom Diet
+        </RouterLink>
       </div>
       <div class="navbar-end gap-2">
         <!-- Usage display -->

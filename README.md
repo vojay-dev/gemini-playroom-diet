@@ -196,6 +196,9 @@ Bounding boxes use normalized coordinates (0-1 range), making the heatmap visual
 ### Static Token Support
 The Airflow client supports both dynamic JWT authentication and static tokens, enabling flexible deployment scenarios.
 
+### Automatic Data Cleanup
+A background scheduler automatically removes scans and images older than a configurable threshold (default: 2 days), preventing storage bloat without manual intervention.
+
 ---
 
 ## What I Learned
@@ -266,6 +269,8 @@ SUPABASE_SECRET_KEY=your_supabase_key
 AIRFLOW_HOST=http://localhost:8080
 AIRFLOW_USERNAME=airflow
 AIRFLOW_PASSWORD=airflow
+CLEANUP_AGE_DAYS=2           # optional, default: 2
+CLEANUP_INTERVAL_MINUTES=60  # optional, default: 60
 ```
 
 **Airflow**

@@ -1,18 +1,22 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import confetti from 'canvas-confetti'
 import SkillRadar from './SkillRadar.vue'
 import ShareCard from './ShareCard.vue'
 
 const route = useRoute()
 const scanId = route.params.id
+const isCached = computed(() => route.query.cached === '1')
 
 const status = ref('loading')
 const result = ref(null)
 const error = ref(null)
 const imageUrl = ref(null)
+const childAge = ref(null)
 const expandedItem = ref(0)
 const showShareModal = ref(false)
+const hasShownConfetti = ref(false)
 let pollInterval = null
 
 const roadmap = computed(() => result.value?.roadmap || [])
@@ -68,10 +72,15 @@ const fetchScan = async () => {
     const data = await response.json()
     status.value = data.status
     imageUrl.value = data.image_url
+    childAge.value = data.child_age
 
     if (data.status === 'done') {
       result.value = data.result
       stopPolling()
+      if (!hasShownConfetti.value) {
+        hasShownConfetti.value = true
+        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } })
+      }
     }
   } catch (e) {
     console.error(e)
@@ -185,7 +194,19 @@ onUnmounted(() => {
           <h1 class="text-2xl md:text-3xl font-bold" style="font-family: 'Fredoka', sans-serif;">
             Your Development Roadmap
           </h1>
-          <p class="opacity-70 mt-2">A personalized 6-month plan for your child's growth</p>
+          <p class="opacity-70 mt-2">
+            A personalized 6-month plan for your
+            <span v-if="childAge" class="font-semibold text-primary">{{ childAge }}-year-old</span>
+            <span v-else>child</span>'s growth
+          </p>
+          <div v-if="isCached" class="tooltip tooltip-bottom mt-2" data-tip="Results loaded from cache. Cached data is automatically cleaned after a few days.">
+            <span class="badge badge-outline badge-success gap-1 cursor-help">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Cached result
+            </span>
+          </div>
         </div>
       </div>
 

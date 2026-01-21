@@ -57,7 +57,7 @@ const handleSubmit = async () => {
     }
 
     const data = await response.json()
-    router.push(`/scan/${data.scan_id}`)
+    router.push({ path: `/scan/${data.scan_id}`, query: data.cached ? { cached: '1' } : {} })
 
   } catch (e) {
     console.error(e)

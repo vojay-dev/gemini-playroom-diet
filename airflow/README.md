@@ -1,47 +1,123 @@
 # Playroom Diet - Airflow
 
-Overview
-========
+Multi-agent AI pipeline for playroom analysis using Apache Airflow 3.0 and Gemini 3 Flash.
 
-Welcome to Astronomer! This project was generated after you ran 'astro dev init' using the Astronomer CLI. This readme describes the contents of the project, as well as how to run Apache Airflow on your local machine.
+## Overview
 
-Project Contents
-================
+This DAG (`process_scans`) orchestrates 4 AI agents that transform a playroom photo into a personalized child development plan. Each agent has a focused task with structured Pydantic outputs.
 
-Your Astro project contains the following files and folders:
+## Pipeline Architecture
 
-- dags: This folder contains the Python files for your Airflow DAGs. By default, this directory includes one example DAG:
-    - `example_astronauts`: This DAG shows a simple ETL pipeline example that queries the list of astronauts currently in space from the Open Notify API and prints a statement for each astronaut. The DAG uses the TaskFlow API to define tasks in Python, and dynamic task mapping to dynamically print a statement for each astronaut. For more on how this DAG works, see our [Getting started tutorial](https://www.astronomer.io/docs/learn/get-started-with-airflow).
-- Dockerfile: This file contains a versioned Astro Runtime Docker image that provides a differentiated Airflow experience. If you want to execute other commands or overrides at runtime, specify them here.
-- include: This folder contains any additional files that you want to include as part of your project. It is empty by default.
-- packages.txt: Install OS-level packages needed for your project by adding them to this file. It is empty by default.
-- requirements.txt: Install Python packages needed for your project by adding them to this file. It is empty by default.
-- plugins: Add custom or community plugins for your project to this file. It is empty by default.
-- airflow_settings.yaml: Use this local-only file to specify Airflow Connections, Variables, and Pools instead of entering them in the Airflow UI as you develop DAGs in this project.
+```
+┌─────────────────┐
+│  get_new_scans  │ ← SQL query for pending scans
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  analyze_image  │ ← Agent 1: Vision AI extracts toy inventory
+└────────┬────────┘
+         │
+    ┌────┴────┐
+    │         │
+    ▼         ▼
+┌────────┐  ┌─────────────────────┐
+│ quest  │  │  analyze_playroom   │ ← Agent 2: O*NET skill mapping
+└───┬────┘  └──────────┬──────────┘
+    │                  │
+    │                  ▼
+    │       ┌─────────────────┐
+    │       │  safety_check   │ ← Agent 3: CPSC safety audit
+    │       └────────┬────────┘
+    │                │
+    └────────┬───────┘
+             ▼
+      ┌─────────────┐
+      │ save_result │ → Updates Supabase with results
+      └─────────────┘
+```
 
-Deploy Your Project Locally
-===========================
+## AI Agents
 
-Start Airflow on your local machine by running 'astro dev start'.
+### Agent 1: `analyze_image`
+- **Model**: Gemini 3 Flash (Vision)
+- **Input**: Playroom photo from Supabase Storage
+- **Output**: `ToyInventory` with bounding boxes
+- **Purpose**: Extract every visible toy with normalized coordinates (0-1 range)
 
-This command will spin up five Docker containers on your machine, each for a different Airflow component:
+### Agent 2: `analyze_playroom`
+- **Model**: Gemini 3 Flash
+- **Input**: Toy inventory + child's age
+- **Output**: `AnalysisResult` with skill scores and 3-item roadmap
+- **Purpose**: Map toys to O*NET abilities, score 6 development categories, identify gaps
 
-- Postgres: Airflow's Metadata Database
-- Scheduler: The Airflow component responsible for monitoring and triggering tasks
-- DAG Processor: The Airflow component responsible for parsing DAGs
-- API Server: The Airflow component responsible for serving the Airflow UI and API
-- Triggerer: The Airflow component responsible for triggering deferred tasks
+### Agent 3: `safety_check`
+- **Model**: Gemini 3 Flash
+- **Input**: Development roadmap + child's age
+- **Output**: `ToyRecommendation` with safety decisions
+- **Purpose**: Validate against CPSC guidelines, substitute unsafe toys, generate shopping queries
 
-When all five containers are ready the command will open the browser to the Airflow UI at http://localhost:8080/. You should also be able to access your Postgres Database at 'localhost:5432/postgres' with username 'postgres' and password 'postgres'.
+### Agent 4: `generate_play_quest`
+- **Model**: Gemini 3 Flash
+- **Input**: Toy inventory + child's age
+- **Output**: `PlayQuest` activity details
+- **Purpose**: Create an immediate play activity using existing toys
+- **Note**: Runs in parallel with Agent 2
 
-Note: If you already have either of the above ports allocated, you can either [stop your existing Docker containers or change the port](https://www.astronomer.io/docs/astro/cli/troubleshoot-locally#ports-are-not-available-for-my-local-airflow-webserver).
+## Pydantic Models
 
-Deploy Your Project to Astronomer
-=================================
+All LLM outputs use strict Pydantic schemas:
 
-If you have an Astronomer account, pushing code to a Deployment on Astronomer is simple. For deploying instructions, refer to Astronomer documentation: https://www.astronomer.io/docs/astro/deploy-code/
+```python
+ToyInventory      # List of toys with bounding boxes
+AnalysisResult    # Status quo, skill scores, roadmap
+ToyRecommendation # Safety-checked recommendations
+PlayQuest         # Structured play activity
+```
 
-Contact
-=======
+## Setup
 
-The Astronomer CLI is maintained with love by the Astronomer team. To report a bug or suggest a change, reach out to our support.
+### Prerequisites
+- Apache Airflow 3.0+ with AI SDK (`airflow-ai-sdk`)
+- Astronomer CLI (recommended) or standalone Airflow
+
+### Environment Variables
+```
+SUPABASE_PROJECT_URL=your_supabase_url
+SUPABASE_SECRET_KEY=your_supabase_key
+```
+
+### Airflow Connection
+Create a Postgres connection with ID `postgres_playroom_diet` pointing to your Supabase database.
+
+## Running Locally
+
+Using Astronomer CLI:
+```sh
+astro dev start
+```
+
+This starts:
+- Postgres (metadata DB)
+- Scheduler
+- DAG Processor
+- API Server
+- Triggerer
+
+Access Airflow UI at `http://localhost:8080`
+
+## Triggering the DAG
+
+The backend triggers the DAG via REST API when a new scan is uploaded:
+```
+POST /api/v1/dags/process_scans/dagRuns
+```
+
+The DAG polls for scans with `status = 'processing'` and processes them.
+
+## Key Technical Details
+
+- **Dynamic Task Mapping**: Uses `.expand()` to process multiple scans in parallel
+- **Structured Outputs**: `@task.llm` decorator with `output_type` ensures schema compliance
+- **Resolution-Independent**: Bounding boxes use normalized 0-1 coordinates
+- **Parallel Execution**: Play Quest generation runs alongside the analysis branch

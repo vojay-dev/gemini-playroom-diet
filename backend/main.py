@@ -1,10 +1,14 @@
 import hashlib
+import logging
 import os
 import uuid
+from contextlib import asynccontextmanager
 from datetime import datetime, date
 from time import time
 
 from dotenv import load_dotenv
+
+logging.basicConfig(level=logging.INFO)
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -15,6 +19,7 @@ from slowapi.util import get_remote_address
 from supabase import create_client, Client
 
 from airflow import AirflowClient
+from cleanup import DataCleaner
 
 load_dotenv()
 
@@ -44,12 +49,24 @@ def get_airflow() -> AirflowClient:
 DAILY_SCAN_LIMIT = int(os.getenv("DAILY_SCAN_LIMIT", "20"))
 GET_RATE_LIMIT = os.getenv("GET_RATE_LIMIT", "30/minute")
 POST_RATE_LIMIT = os.getenv("POST_RATE_LIMIT", "5/minute")
+CLEANUP_AGE_DAYS = int(os.getenv("CLEANUP_AGE_DAYS", "2"))
+CLEANUP_INTERVAL_MINUTES = int(os.getenv("CLEANUP_INTERVAL_MINUTES", "60"))
 limiter = Limiter(key_func=get_remote_address)
 
 _scan_count_cache = {"count": 0, "timestamp": 0}
 CACHE_TTL_SECONDS = 5
 
-app = FastAPI(title="Playroom Diet API")
+data_cleaner: DataCleaner | None = None
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global data_cleaner
+    data_cleaner = DataCleaner(get_supabase, CLEANUP_AGE_DAYS, CLEANUP_INTERVAL_MINUTES)
+    data_cleaner.start()
+    yield
+    data_cleaner.stop()
+
+app = FastAPI(title="Playroom Diet API", lifespan=lifespan)
 app.state.limiter = limiter
 
 
@@ -114,6 +131,7 @@ def get_scan(request: Request, scan_id: str):
         "scan_id": scan_id,
         "status": scan["status"],
         "image_url": image_url,
+        "child_age": scan.get("child_age"),
         "result": scan.get("results_json") if scan["status"] == "done" else None
     }
 
