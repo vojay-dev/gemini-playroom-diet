@@ -199,7 +199,7 @@ onUnmounted(() => {
             <span v-if="childAge" class="font-semibold text-primary">{{ childAge }}-year-old</span>
             <span v-else>child</span>'s growth
           </p>
-          <div v-if="isCached" class="tooltip tooltip-bottom mt-2" data-tip="Results loaded from cache. Cached data is automatically cleaned after a few days.">
+          <div v-if="isCached" class="tooltip tooltip-bottom mt-2" data-tip="Results loaded from cache. The cache is based on the image hash. In case of a cache hit, the child's age from the cached run is used. It is automatically cleaned after a few days.">
             <span class="badge badge-outline badge-success gap-1 cursor-help">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
