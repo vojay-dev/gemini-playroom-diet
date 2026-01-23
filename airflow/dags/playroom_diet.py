@@ -81,7 +81,7 @@ def get_image_bytes(image_path: str) -> bytes:
         return response.content
 
 
-@dag
+@dag(max_active_runs=1)  # each Dag run processes ALL new scans, no parallelism on Dag level needed
 def process_scans():
 
     _get_new_scans = SQLExecuteQueryOperator(
@@ -112,7 +112,8 @@ def process_scans():
 
             You can define your own categories and play modes based on the toys you see.
             If the image provided is not a playroom or no toys are visible, respond with an empty "items" list.
-        """
+        """,
+        max_active_tis_per_dag=2
     )
     def analyze_image(scan_record: tuple):
         image_path = scan_record[1]
@@ -147,7 +148,8 @@ def process_scans():
             - setup: One paragraph on how to prepare the activity
             - instructions: 3-5 clear steps for the activity
             - parent_tip: One sentence on how to make it more engaging or educational
-        """
+        """,
+        max_active_tis_per_dag=2
     )
     def generate_play_quest(zipped_input: tuple):
         toy_inventory, scan_record = zipped_input
@@ -191,7 +193,8 @@ def process_scans():
               - Which of the 6 categories it maps to in skill_category
               - A specific toy recommendation in recommended_toy
               - Scientific reasoning citing the O*NET ability
-        """
+        """,
+        max_active_tis_per_dag=2
     )
     def analyze_playroom(toy_inventory: dict):
         return json.dumps(toy_inventory)
@@ -223,7 +226,8 @@ def process_scans():
             - Preserve the timeframe ("now", "3_months", "6_months") from the input.
             - Decision must be "APPROVED" or "SUBSTITUTED".
             - Provide a clear 'safety_context' explaining your decision for each toy.
-        """
+        """,
+        max_active_tis_per_dag=2
     )
     def safety_check(zipped_input: tuple):
         analysis_result, scan_record = zipped_input
@@ -254,7 +258,7 @@ def process_scans():
     zipped_input_print = toy_inventories.zip(analysis_results, recommendations)
     print_result.expand(zipped_input=zipped_input_print)
 
-    @task
+    @task(max_active_tis_per_dag=2)
     def save_result(zipped_input: tuple):
         toy_inventory, play_quest, analysis_result, toy_recommendation, scan_record = zipped_input
         scan_id = str(scan_record[0])
