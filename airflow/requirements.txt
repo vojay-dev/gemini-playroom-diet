@@ -3,4 +3,5 @@ apache-airflow-providers-common-sql==1.30.2
 apache-airflow-providers-postgres==6.5.1
 airflow-ai-sdk[gemini]==0.1.7
 pydantic-ai-slim[google]==1.41.0
+ddgs==9.10.0
 supabase==2.27.1
