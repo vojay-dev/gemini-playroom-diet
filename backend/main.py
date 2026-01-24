@@ -3,7 +3,7 @@ import logging
 import os
 import uuid
 from contextlib import asynccontextmanager
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 from time import time
 
 from dotenv import load_dotenv
@@ -88,7 +88,8 @@ def get_today_scan_count(bypass_cache: bool = False) -> int:
     if not bypass_cache and now - _scan_count_cache["timestamp"] < CACHE_TTL_SECONDS:
         return _scan_count_cache["count"]
 
-    today_start = date.today().isoformat()
+    # Use UTC midnight for consistent comparison with database timestamps
+    today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
     result = get_supabase().table("scans").select("id", count="exact").gte("created_at", today_start).execute()
     count = result.count or 0
 
