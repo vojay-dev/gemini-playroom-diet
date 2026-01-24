@@ -2,12 +2,11 @@
 
 ![Playroom Diet Logo](doc/banner.png)
 
-> **Elevator Pitch**: One photo. Four AI agents map toys to O*NET professional skills, build a 6-month roadmap, and generate a Play Quest using what you own. A nutritionist for your child's play.
+> Multi-agent AI meets child development. Just like a diet needs balance, so does play. With Gemini 3, O*NET data, and an intuitive UI, you get a personalized roadmap, because parenting is hard enough.
 
-**Playroom Diet** is an AI-powered child development tool that transforms chaotic toy piles into science-backed growth plans. Upload a photo of your playroom, and our multi-agent AI pipeline analyzes the toys, maps them to professional skill frameworks, and generates a personalized 6-month development roadmap. Think of it as a nutritionist for your child's play, ensuring a balanced "diet" of developmental stimulation.
+**Playroom Diet** is an AI-powered child development tool that transforms chaotic toy piles into science-backed growth plans. Upload a photo of your playroom, and a multi-agent AI system analyzes the toys, maps them to professional skill frameworks, and creates a personalized six-month development roadmap. It also delivers play quests that encourage creative use of the toys you already own. Think of it as a nutritionist for your child’s play, ensuring a balanced diet of developmental stimulation.
 
-<!-- TODO: Add live demo link -->
-<!-- **Try it yourself**: [playroom-diet.com](https://playroom-diet.com/) -->
+**Try it yourself**: [playroom-diet.web.app](https://playroom-diet.web.app/)
 
 _Keep in mind: this is a hackathon prototype. Daily limits apply to control costs._
 
@@ -15,18 +14,16 @@ _Keep in mind: this is a hackathon prototype. Daily limits apply to control cost
 
 ---
 
-## tl;dr for Judges
+## tl;dr
 
-This project demonstrates a **multi-agent AI pipeline** using Apache Airflow and Gemini, not just a single-prompt wrapper:
+This project demonstrates a **multi-agent AI pipeline** using Gemini 3 and Apache Airflow:
 
-1. **Agent 1**: Vision AI extracts toy inventory with bounding box coordinates
-2. **Agent 2**: Maps toys to O*NET professional skill framework
-3. **Agent 3**: Safety-checks recommendations against CPSC guidelines
-4. **Agent 4**: Generates a Play Quest using existing toys
+1. **Agent 1**: Vision agent extracts toy inventory with bounding box coordinates for visualization.
+2. **Agent 2**: Maps toys to the [O*NET professional skills framework](https://www.onetonline.org/find/descriptor/browse/1.A) to identify which cognitive and physical abilities the toys develop and which require further development. Create recommendations of toys to add.
+3. **Agent 3**: Safety-checks recommendations against CPSC guidelines and generates search queries to find the suggested toys on platforms like Amazon.
+4. **Agent 4**: Generates a Play Quest using existing toys to learn and enjoy until new toys arrive.
 
-The result: a 6-month roadmap with shopping links, plus an immediate activity parents can do today.
-
-<!-- TODO: Add instructions for local testing at the end -->
+The result: Open Playroom Diet on any device, snap a photo of the chaos, and instantly get a science-backed development roadmap, verified shopping links, and a creative _Play Mission_ you can start right now with the toys you already have.
 
 ---
 
