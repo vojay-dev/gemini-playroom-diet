@@ -12,11 +12,11 @@ Once started, it will claim pending scans from the underlying Postgres `scans` t
 
 ### Race Condition Handling
 
-The DAG uses **atomic scan claiming** via `UPDATE ... FOR UPDATE SKIP LOCKED` to prevent race conditions:
+The Dag uses **atomic scan claiming** via `UPDATE ... FOR UPDATE SKIP LOCKED` to prevent race conditions:
 
 1. When `get_new_scans` runs, it atomically claims up to 10 scans by setting their status from `processing` to `in_flight`
-2. The `FOR UPDATE SKIP LOCKED` clause ensures concurrent DAG runs claim different scans
-3. Multiple DAG runs can process in parallel, each working on its own set of scans
+2. The `FOR UPDATE SKIP LOCKED` clause ensures concurrent Dag runs claim different scans
+3. Multiple Dag runs can process in parallel, each working on its own set of scans
 4. This eliminates wait times compared to the previous `max_active_runs=1` approach
 
 **Status flow**: `processing` (new) -> `in_flight` (claimed) -> `done` (complete)
@@ -115,24 +115,24 @@ astro dev start
 This starts:
 - Postgres (metadata DB)
 - Scheduler
-- DAG Processor
+- Dag Processor
 - API Server
 - Triggerer
 
 Access Airflow UI at `http://localhost:8080`
 
-## Triggering the DAG
+## Triggering the Dag
 
-The backend triggers the DAG via REST API when a new scan is uploaded:
+The backend triggers the Dag via REST API when a new scan is uploaded:
 ```
 POST /api/v1/dags/process_scans/dagRuns
 ```
 
-The DAG polls for scans with `status = 'processing'` and processes them.
+The Dag polls for scans with `status = 'processing'` and processes them.
 
 ## Key Technical Details
 
-- **Atomic Claiming**: Uses `UPDATE ... FOR UPDATE SKIP LOCKED` to prevent race conditions between concurrent DAG runs
+- **Atomic Claiming**: Uses `UPDATE ... FOR UPDATE SKIP LOCKED` to prevent race conditions between concurrent Dag runs
 - **Dynamic Task Mapping**: Uses `.expand()` to process multiple scans in parallel
 - **Structured Outputs**: `@task.llm` decorator with `output_type` ensures schema compliance
 - **Resolution-Independent**: Bounding boxes use normalized 0-1 coordinates

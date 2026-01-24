@@ -6,7 +6,7 @@ FastAPI backend that handles image uploads, triggers the Airflow pipeline, and s
 
 - **Image Upload**: Receives playroom photos, stores in Supabase Storage
 - **Cache Detection**: SHA-256 hashing to avoid reprocessing identical images
-- **Airflow Integration**: Triggers the multi-agent DAG via REST API
+- **Airflow Integration**: Triggers the multi-agent Dag via REST API
 - **Polling Endpoint**: Frontend polls for scan status and results
 - **Automatic Cleanup**: APScheduler removes old scans and images (configurable)
 - **Orphan Cleanup**: On startup, removes storage images not referenced by any scan
@@ -76,7 +76,7 @@ ALTER TABLE public.scans ENABLE ROW LEVEL SECURITY;
 | Status | Description |
 |--------|-------------|
 | `processing` | Scan created, awaiting Airflow pickup |
-| `in_flight` | Claimed by Airflow DAG, being processed |
+| `in_flight` | Claimed by Airflow Dag, being processed |
 | `done` | Successfully completed with results |
 
 ## Deployment

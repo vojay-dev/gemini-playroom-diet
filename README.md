@@ -230,7 +230,7 @@ Most importantly: the best AI products don't just generate text, they integrate 
 gemini-playroom-diet/
 ├── frontend/          # Vue.js application
 ├── backend/           # FastAPI server
-├── airflow/           # DAG definitions and AI agents
+├── airflow/           # Dag definitions and AI agents
 │   └── dags/
 │       └── playroom_diet.py
 ├── start.sh           # Local development startup script
