@@ -16,13 +16,13 @@ Vue.js 3 single-page application for the Playroom Diet analysis tool.
 
 ## Tech Stack
 
-- Vue.js 3 (Composition API)
-- Vite 7
-- Tailwind CSS 4 + daisyUI 5
-- Vue Router 4
-- Vue Flow (system visualization)
-- Three.js (3D background)
-- canvas-confetti (🎉)
+- [Vue.js 3](https://vuejs.org/) (Composition API)
+- [Vite](https://vite.dev/)
+- [Tailwind CSS](https://tailwindcss.com/) + [daisyUI 5](https://daisyui.com/)
+- [Vue Router 4](https://router.vuejs.org/)
+- [Vue Flow](https://vueflow.dev/) (system visualization)
+- [Three.js](https://threejs.org/) (3D background)
+- [canvas-confetti](https://github.com/catdad/canvas-confetti) (🎉)
 
 ## Project Structure
 

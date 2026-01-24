@@ -14,11 +14,11 @@ FastAPI backend that handles image uploads, triggers the Airflow Gemini AI-agent
 
 ## Tech Stack
 
-- Python 3.12
-- FastAPI + Uvicorn
-- Supabase (Postgres + Storage)
-- APScheduler (background cleanup)
-- Pydantic (data validation)
+- Python 3.12 + [uv](https://github.com/astral-sh/uv)
+- [FastAPI + Uvicorn](https://fastapi.tiangolo.com/)
+- [Supabase](https://supabase.com/) (Postgres + Storage)
+- [APScheduler](https://github.com/agronholm/apscheduler) (periodic background cleanup)
+- [Pydantic](https://docs.pydantic.dev/latest/) (data validation)
 
 ## Setup
 
