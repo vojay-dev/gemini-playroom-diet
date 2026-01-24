@@ -5,6 +5,7 @@ Vue.js 3 single-page application for the Playroom Diet analysis tool.
 ## Features
 
 - **Photo Upload**: Upload or capture playroom photos, with example images
+- **Smart Image Compression**: Client-side optimization keeps uploads under 1.5MB
 - **Age Slider**: Select child's age (1-12 years)
 - **Results Dashboard**: Displays skill radar, 6-month roadmap, and Play Quest
 - **Toy Heatmap**: AI detection overlay showing identified toys with bounding boxes
@@ -36,11 +37,23 @@ src/
 │   ├── About.vue         # About page
 │   └── PlayroomScene.vue # 3D background
 ├── composables/
-│   └── useToast.js       # Toast notification system
+│   ├── useToast.js       # Toast notification system
+│   └── useImageCompressor.js # Client-side image compression
 ├── router.js             # Route definitions
 ├── main.js               # App entry point
 └── App.vue               # Root component
 ```
+
+## Image Compression
+
+The frontend automatically compresses large images before upload to avoid Supabase storage limits:
+
+- **Target size**: <= 1.5 MB
+- **Max dimensions**: 2048px (maintains aspect ratio)
+- **Quality**: Starts at 90%, reduces iteratively if needed
+- **Format**: Converts to JPEG for consistent compression
+
+Users see a toast notification when compression saves significant space.
 
 ## Setup
 

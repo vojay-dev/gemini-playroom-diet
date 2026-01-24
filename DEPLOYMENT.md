@@ -1,20 +1,15 @@
-# Backend and frontend deployment guide
+# Deployment Guide
 
-## Prerequisites
-- `gcloud` CLI installed and authenticated (`brew install --cask gcloud-cli && gcloud auth login`)
-- `firebase` CLI installed (`npm install -g firebase-tools && firebase login`)
-- Supabase setup with table (see [/backend/README.md](/backend/README.md))
-- Airflow deployed (e.g. via Astro CLI at Astro)
+## Backend (Google Cloud Run)
 
-## Backend (via Cloud Run)
+### First-Time Setup
 
 ```bash
-cd backend
-
-# first time: enable APIs
+# Enable required APIs
 gcloud services enable cloudbuild.googleapis.com run.googleapis.com artifactregistry.googleapis.com
 
-# build and deploy
+# Deploy with env vars
+cd backend
 gcloud run deploy playroom-diet-api \
   --source . \
   --region us-central1 \
@@ -22,47 +17,72 @@ gcloud run deploy playroom-diet-api \
   --set-env-vars "SUPABASE_URL=xxx,SUPABASE_SECRET_KEY=xxx,AIRFLOW_HOST=xxx,AIRFLOW_STATIC_TOKEN=xxx"
 ```
 
-After deploy, note the service URL: `https://playroom-diet-api-xxx-uc.a.run.app`
+### Redeploy
 
-### Update env vars only (no rebuild)
 ```bash
+cd backend
+gcloud run deploy playroom-diet-api --source . --region us-central1
+```
+
+Existing environment variables are preserved automatically.
+
+### Managing Environment Variables
+
+```bash
+# View current env vars
+gcloud run services describe playroom-diet-api --region us-central1 --format='yaml(spec.template.spec.containers[0].env)'
+
+# Update specific vars (no rebuild)
 gcloud run services update playroom-diet-api --region us-central1 \
-  --update-env-vars "KEY=value"
+  --update-env-vars "DAILY_SCAN_LIMIT=50"
+
+# Add new var
+gcloud run services update playroom-diet-api --region us-central1 \
+  --set-env-vars "NEW_VAR=value"
 ```
 
-### View logs
+### Useful Commands
+
 ```bash
+# View logs
 gcloud run services logs read playroom-diet-api --region us-central1 --limit 50
+
+# Stream logs (follow mode)
+gcloud run services logs tail playroom-diet-api --region us-central1
+
+# Check service status
+gcloud run services describe playroom-diet-api --region us-central1
+
+# Set scaling limits
+gcloud run services update playroom-diet-api --region us-central1 \
+  --min-instances 1 --max-instances 10
 ```
 
-### Set max instances
-```bash
-gcloud run services update playroom-diet-api --region us-central1 --max-instances 10
-```
+---
 
-## Frontend (via Firebase Hosting)
+## Frontend (Firebase Hosting)
+
+### First-Time Setup
 
 ```bash
 cd frontend
-
-# first time only
 firebase init hosting
-# → select project, use 'dist' as public dir, configure as SPA: yes
+# → Select project
+# → Public directory: dist
+# → Single-page app: Yes
+# → Don't overwrite index.html
+```
 
-# build and deploy
+### Redeploy
+
+```bash
+cd frontend
 GPD_API_URL=https://playroom-diet-api-xxx-uc.a.run.app npm run build
 firebase deploy --only hosting
 ```
 
-## Avoiding cold starts
+---
 
-Keep one minimal instance warm (~$0.03/hour):
-```bash
-gcloud run services update playroom-diet-api --region us-central1 \
-  --min-instances 1 --cpu 0.5 --memory 256Mi
-```
+## Airflow
 
-Scale back to zero:
-```bash
-gcloud run services update playroom-diet-api --region us-central1 --min-instances 0
-```
+Deployed separately via [Astronomer](https://astronomer.io). Use `astro deploy` from the `airflow/` directory.

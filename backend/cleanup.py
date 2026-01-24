@@ -31,8 +31,11 @@ class DataCleaner:
             scan_ids = [scan["id"] for scan in old_scans.data]
 
             if image_paths:
-                supabase.storage.from_("playroom-images").remove(image_paths)
-                logger.info("Deleted %d images from storage", len(image_paths))
+                try:
+                    result = supabase.storage.from_("playroom-images").remove(image_paths)
+                    logger.info("Deleted %d images from storage: %s", len(image_paths), result)
+                except Exception as storage_error:
+                    logger.error("Failed to delete images from storage: %s (paths: %s)", storage_error, image_paths)
 
             supabase.table("scans").delete().lt("created_at", cutoff).execute()
             logger.info("Deleted %d scans older than %d days", len(scan_ids), self.age_days)
@@ -40,7 +43,44 @@ class DataCleaner:
         except Exception as e:
             logger.error("Cleanup failed: %s", e)
 
+    def cleanup_orphaned_images(self) -> None:
+        """One-time cleanup: delete images not referenced by any scan."""
+        try:
+            supabase = self.get_supabase()
+
+            # Get all image paths from database
+            scans = supabase.table("scans").select("image_path").execute()
+            referenced_paths = {scan["image_path"] for scan in scans.data if scan.get("image_path")}
+
+            # List all files in storage
+            storage_files = supabase.storage.from_("playroom-images").list("scans")
+            if not storage_files:
+                logger.info("No files in storage to check for orphans")
+                return
+
+            # Find orphaned files (in storage but not in database)
+            orphaned_paths = []
+            for file in storage_files:
+                file_path = f"scans/{file['name']}"
+                if file_path not in referenced_paths:
+                    orphaned_paths.append(file_path)
+
+            if not orphaned_paths:
+                logger.info("No orphaned images found")
+                return
+
+            # Delete orphaned files
+            try:
+                result = supabase.storage.from_("playroom-images").remove(orphaned_paths)
+                logger.info("Deleted %d orphaned images: %s", len(orphaned_paths), result)
+            except Exception as e:
+                logger.error("Failed to delete orphaned images: %s", e)
+
+        except Exception as e:
+            logger.error("Orphan cleanup failed: %s", e)
+
     def start(self) -> None:
+        self.cleanup_orphaned_images()  # One-time orphan cleanup on startup
         self.cleanup()
         self.scheduler.add_job(self.cleanup, "interval", minutes=self.interval_minutes)
         self.scheduler.start()

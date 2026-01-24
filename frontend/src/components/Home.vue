@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
 import { useToast } from '../composables/useToast'
+import { compressImage } from '../composables/useImageCompressor'
 
 const router = useRouter()
 const toast = useToast()
@@ -9,12 +10,31 @@ const age = ref(4)
 const file = ref(null)
 const previewUrl = ref(null)
 const isSubmitting = ref(false)
+const isCompressing = ref(false)
 
-const handleFileChange = (event) => {
+const handleFileChange = async (event) => {
   const selected = event.target.files[0]
   if (!selected) return
-  file.value = selected
+
+  // Show preview immediately with original
   previewUrl.value = URL.createObjectURL(selected)
+
+  // Compress if needed
+  isCompressing.value = true
+  try {
+    const compressed = await compressImage(selected)
+    file.value = compressed
+
+    if (compressed.size < selected.size) {
+      const savedMB = ((selected.size - compressed.size) / (1024 * 1024)).toFixed(1)
+      toast.success(`Image optimized (saved ${savedMB} MB)`)
+    }
+  } catch (e) {
+    console.error('Compression failed:', e)
+    file.value = selected // Use original on failure
+  } finally {
+    isCompressing.value = false
+  }
 }
 
 const exampleImages = [
@@ -29,8 +49,17 @@ const selectExample = async (exampleSrc) => {
     const filename = exampleSrc.split('/').pop()
     const exampleFile = new File([blob], filename, { type: blob.type })
 
-    file.value = exampleFile
     previewUrl.value = URL.createObjectURL(blob)
+
+    // Compress example if needed
+    isCompressing.value = true
+    try {
+      file.value = await compressImage(exampleFile)
+    } catch (e) {
+      file.value = exampleFile
+    } finally {
+      isCompressing.value = false
+    }
   } catch (e) {
     console.error('Failed to load example:', e)
   }
@@ -224,7 +253,6 @@ const handleSubmit = async () => {
                       id="dropzone-file"
                       type="file"
                       accept="image/*"
-                      capture="environment"
                       class="hidden"
                       @change="handleFileChange"
                     />
@@ -258,12 +286,12 @@ const handleSubmit = async () => {
 
           <!-- Submit -->
           <div class="form-control mt-5">
-            <button class="btn btn-primary gap-2" :disabled="isSubmitting">
-              <span v-if="isSubmitting" class="loading loading-spinner loading-sm"></span>
+            <button class="btn btn-primary gap-2" :disabled="isSubmitting || isCompressing">
+              <span v-if="isSubmitting || isCompressing" class="loading loading-spinner loading-sm"></span>
               <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
-              {{ isSubmitting ? 'Analyzing...' : 'Analyze Playroom' }}
+              {{ isCompressing ? 'Optimizing...' : isSubmitting ? 'Analyzing...' : 'Analyze Playroom' }}
             </button>
           </div>
 

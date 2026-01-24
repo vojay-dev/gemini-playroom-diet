@@ -120,8 +120,8 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <!-- Processing -->
-      <div v-else-if="status === 'processing'" class="card bg-base-300/30 backdrop-blur-md border border-white/10 rounded-2xl">
+      <!-- Processing (includes 'in_flight' status from Airflow) -->
+      <div v-else-if="status === 'processing' || status === 'in_flight'" class="card bg-base-300/30 backdrop-blur-md border border-white/10 rounded-2xl">
         <div class="card-body flex flex-col items-center text-center py-12">
           <h2 class="text-2xl font-semibold">Analyzing your playroom...</h2>
 

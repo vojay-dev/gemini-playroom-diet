@@ -9,6 +9,7 @@ FastAPI backend that handles image uploads, triggers the Airflow pipeline, and s
 - **Airflow Integration**: Triggers the multi-agent DAG via REST API
 - **Polling Endpoint**: Frontend polls for scan status and results
 - **Automatic Cleanup**: APScheduler removes old scans and images (configurable)
+- **Orphan Cleanup**: On startup, removes storage images not referenced by any scan
 - **Daily Limits**: Configurable rate limiting to control API costs
 
 ## Tech Stack
@@ -69,6 +70,14 @@ CREATE TABLE scans (
 
 ALTER TABLE public.scans ENABLE ROW LEVEL SECURITY;
 ```
+
+### Status Flow
+
+| Status | Description |
+|--------|-------------|
+| `processing` | Scan created, awaiting Airflow pickup |
+| `in_flight` | Claimed by Airflow DAG, being processed |
+| `done` | Successfully completed with results |
 
 ## Deployment
 
