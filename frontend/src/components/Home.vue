@@ -19,7 +19,7 @@ const handleFileChange = async (event) => {
   // Show preview immediately with original
   previewUrl.value = URL.createObjectURL(selected)
 
-  // Compress if needed
+  // Compress if needed (storage has file size limitation)
   isCompressing.value = true
   try {
     const compressed = await compressImage(selected)

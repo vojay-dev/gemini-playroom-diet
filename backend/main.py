@@ -34,6 +34,7 @@ def get_supabase() -> Client:
         if not url or not key:
             raise ValueError("Missing SUPABASE_URL or SUPABASE_SECRET_KEY")
         supabase = create_client(url, key)
+
     return supabase
 
 def get_airflow() -> AirflowClient:
@@ -44,6 +45,7 @@ def get_airflow() -> AirflowClient:
         password = os.getenv("AIRFLOW_PASSWORD", "airflow")
         token = os.getenv("AIRFLOW_STATIC_TOKEN") or None
         airflow_client = AirflowClient(host, username, password, token)
+
     return airflow_client
 
 DAILY_SCAN_LIMIT = int(os.getenv("DAILY_SCAN_LIMIT", "20"))

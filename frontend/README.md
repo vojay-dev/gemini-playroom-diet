@@ -11,8 +11,8 @@ Vue.js 3 single-page application for the Playroom Diet analysis tool.
 - **Toy Heatmap**: AI detection overlay showing identified toys with bounding boxes
 - **Share Card**: Generate shareable result images
 - **System Overview**: Visual pipeline diagram using Vue Flow
-- **Toast Notifications**: Non-intrusive feedback system
-- **Confetti Celebration**: Fun animation on successful analysis
+- **Toast Notifications**: Feedback system
+- **Confetti Celebration**: Because why not 😉
 
 ## Tech Stack
 
@@ -20,28 +20,28 @@ Vue.js 3 single-page application for the Playroom Diet analysis tool.
 - Vite 7
 - Tailwind CSS 4 + daisyUI 5
 - Vue Router 4
-- Vue Flow (pipeline visualization)
+- Vue Flow (system visualization)
 - Three.js (3D background)
-- canvas-confetti
+- canvas-confetti (🎉)
 
 ## Project Structure
 
 ```
 src/
 ├── components/
-│   ├── Home.vue          # Upload form
-│   ├── ScanResult.vue    # Results dashboard
-│   ├── SkillRadar.vue    # Radar chart component
-│   ├── ShareCard.vue     # Shareable image generator
-│   ├── SystemOverview.vue # Pipeline diagram
-│   ├── About.vue         # About page
-│   └── PlayroomScene.vue # 3D background
+│   ├── Home.vue              # Upload form
+│   ├── ScanResult.vue        # Results dashboard
+│   ├── SkillRadar.vue        # Radar chart component
+│   ├── ShareCard.vue         # Shareable image generator
+│   ├── SystemOverview.vue    # Interactive system diagram
+│   ├── About.vue             # About page
+│   └── PlayroomScene.vue     # 3D background
 ├── composables/
-│   ├── useToast.js       # Toast notification system
+│   ├── useToast.js           # Toast notifications
 │   └── useImageCompressor.js # Client-side image compression
-├── router.js             # Route definitions
-├── main.js               # App entry point
-└── App.vue               # Root component
+├── router.js                 # Route definitions
+├── main.js                   # App entry point
+└── App.vue                   # Root component (also has navigation)
 ```
 
 ## Image Compression
@@ -52,8 +52,6 @@ The frontend automatically compresses large images before upload to avoid Supaba
 - **Max dimensions**: 2048px (maintains aspect ratio)
 - **Quality**: Starts at 90%, reduces iteratively if needed
 - **Format**: Converts to JPEG for consistent compression
-
-Users see a toast notification when compression saves significant space.
 
 ## Setup
 
@@ -77,7 +75,7 @@ Create `.env` file:
 GPD_API_URL=http://localhost:8000
 ```
 
-For production, set this to your Cloud Run backend URL.
+For production, set this to the Cloud Run backend service URL.
 
 ## Build
 
@@ -89,4 +87,4 @@ Output goes to `dist/` directory.
 
 ## Deployment
 
-Deployed to Firebase Hosting. See `DEPLOYMENT.md` in root directory for instructions.
+Deployed to Firebase Hosting. See [DEPLOYMENT.md](../DEPLOYMENT.md) for instructions.

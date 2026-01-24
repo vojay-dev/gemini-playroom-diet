@@ -81,12 +81,12 @@ def get_image_bytes(image_path: str) -> bytes:
         return response.content
 
 
-@dag(max_active_runs=2)  # parallel runs are fine, race conditions handled on DB level
+@dag(max_active_runs=2)  # Parallel runs are fine, race conditions handled on DB level
 def process_scans():
 
-    # atomically claim scans by setting status to 'in_flight',
-    # uses FOR UPDATE SKIP LOCKED to prevent race conditions between parallel Dag runs,
-    # each run claims all open scans, allowing concurrent processing
+    # Atomically claim scans by setting status to 'in_flight'
+    # Uses FOR UPDATE SKIP LOCKED to prevent race conditions between parallel Dag runs
+    # Each run claims all open scans, allowing concurrent processing
     _get_new_scans = SQLExecuteQueryOperator(
         task_id="get_new_scans",
         conn_id=_POSTGRES_CONN_ID,

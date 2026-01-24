@@ -1,8 +1,18 @@
 # Deployment Guide
 
+All components are implemented in a platform-independent manner. For example, the database can be any PostgreSQL instance, and Airflow can run on any hosting provider, as only open-source features are used. This approach maximizes flexibility, and platforms are chosen solely for cost optimization.
+
+Overview:
+
+- **Backend**: Google Cloud Run
+- **Frontend**: Firebase Hosting
+- **Airflow**: Astronomer Astro
+- **Database**: Supabase
+- **Storage**: Supabase
+
 ## Backend (Google Cloud Run)
 
-### First-Time Setup
+### First-time setup
 
 ```bash
 # Enable required APIs
@@ -26,7 +36,10 @@ gcloud run deploy playroom-diet-api --source . --region us-central1
 
 Existing environment variables are preserved automatically.
 
-### Managing Environment Variables
+> [!IMPORTANT]
+> Note down the service URL as we need it for frontend deployment. It can be found in the Google Cloud Console later.
+
+### Managing environment variables
 
 ```bash
 # View current env vars
@@ -58,11 +71,9 @@ gcloud run services update playroom-diet-api --region us-central1 \
   --min-instances 1 --max-instances 10
 ```
 
----
-
 ## Frontend (Firebase Hosting)
 
-### First-Time Setup
+### First-time setup
 
 ```bash
 cd frontend
@@ -75,14 +86,19 @@ firebase init hosting
 
 ### Redeploy
 
+> [!IMPORTANT]
+> Set correct service URL from backend deployment.
+
 ```bash
 cd frontend
 GPD_API_URL=https://playroom-diet-api-xxx-uc.a.run.app npm run build
 firebase deploy --only hosting
 ```
 
----
-
 ## Airflow
 
-Deployed separately via [Astronomer](https://astronomer.io). Use `astro deploy` from the `airflow/` directory.
+Local Airflow setup as well as deployment are handled via the [Astro CLI](https://github.com/astronomer/astro-cli) (open-source).
+
+```bash
+astro deploy
+```
