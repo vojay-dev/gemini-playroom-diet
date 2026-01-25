@@ -9,6 +9,7 @@ FastAPI backend that handles image uploads, triggers the Airflow Gemini AI-agent
 - **Airflow Integration**: Triggers the multi-agent Dag via the Airflow REST API (_v2_)
 - **Polling Endpoint**: Frontend polls for scan status and results
 - **Automatic Cleanup**: APScheduler removes old scans and images periodically (configurable)
+- **Cleanup Whitelist**: Protect specific scan IDs from automatic deletion (for demo/example scans)
 - **Orphan Cleanup**: On startup, removes storage images not referenced by any scan
 - **Daily Limits**: Configurable rate limiting to control API costs
 
@@ -40,6 +41,7 @@ GET_RATE_LIMIT=30/minute     # optional
 POST_RATE_LIMIT=5/minute     # optional
 CLEANUP_AGE_DAYS=2           # optional
 CLEANUP_INTERVAL_MINUTES=60  # optional
+CLEANUP_WHITELIST=           # optional, comma-separated scan IDs to never delete
 ```
 
 ## Running Locally

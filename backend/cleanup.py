@@ -10,10 +10,11 @@ logger = logging.getLogger(__name__)
 
 class DataCleaner:
 
-    def __init__(self, get_supabase: callable, age_days: int = 2, interval_minutes: int = 60):
+    def __init__(self, get_supabase: callable, age_days: int = 2, interval_minutes: int = 60, whitelist: list[str] = None):
         self.get_supabase = get_supabase
         self.age_days = age_days
         self.interval_minutes = interval_minutes
+        self.whitelist = set(whitelist) if whitelist else set()
         self.scheduler = BackgroundScheduler()
 
     def cleanup(self) -> None:
@@ -27,8 +28,19 @@ class DataCleaner:
                 logger.info("No old scans to clean up")
                 return
 
-            image_paths = [scan["image_path"] for scan in old_scans.data if scan.get("image_path")]
-            scan_ids = [scan["id"] for scan in old_scans.data]
+            # Filter out whitelisted scans
+            scans_to_delete = [scan for scan in old_scans.data if scan["id"] not in self.whitelist]
+            whitelisted_count = len(old_scans.data) - len(scans_to_delete)
+
+            if whitelisted_count > 0:
+                logger.info("Skipping %d whitelisted scans", whitelisted_count)
+
+            if not scans_to_delete:
+                logger.info("No scans to clean up after whitelist filter")
+                return
+
+            image_paths = [scan["image_path"] for scan in scans_to_delete if scan.get("image_path")]
+            scan_ids = [scan["id"] for scan in scans_to_delete]
 
             if image_paths:
                 try:
@@ -37,7 +49,9 @@ class DataCleaner:
                 except Exception as storage_error:
                     logger.error("Failed to delete images from storage: %s (paths: %s)", storage_error, image_paths)
 
-            supabase.table("scans").delete().lt("created_at", cutoff).execute()
+            # Delete scans by ID to respect whitelist
+            for scan_id in scan_ids:
+                supabase.table("scans").delete().eq("id", scan_id).execute()
             logger.info("Deleted %d scans older than %d days", len(scan_ids), self.age_days)
 
         except Exception as e:
@@ -84,7 +98,7 @@ class DataCleaner:
         self.cleanup()
         self.scheduler.add_job(self.cleanup, "interval", minutes=self.interval_minutes)
         self.scheduler.start()
-        logger.info("Started data cleaner (age_days=%d, interval=%dm)", self.age_days, self.interval_minutes)
+        logger.info("Started data cleaner (age_days=%d, interval=%dm, whitelist=%d)", self.age_days, self.interval_minutes, len(self.whitelist))
 
     def stop(self) -> None:
         self.scheduler.shutdown()

@@ -53,6 +53,7 @@ GET_RATE_LIMIT = os.getenv("GET_RATE_LIMIT", "30/minute")
 POST_RATE_LIMIT = os.getenv("POST_RATE_LIMIT", "5/minute")
 CLEANUP_AGE_DAYS = int(os.getenv("CLEANUP_AGE_DAYS", "2"))
 CLEANUP_INTERVAL_MINUTES = int(os.getenv("CLEANUP_INTERVAL_MINUTES", "60"))
+CLEANUP_WHITELIST = [x.strip() for x in os.getenv("CLEANUP_WHITELIST", "").split(",") if x.strip()]
 limiter = Limiter(key_func=get_remote_address)
 
 _scan_count_cache = {"count": 0, "timestamp": 0}
@@ -63,7 +64,7 @@ data_cleaner: DataCleaner | None = None
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global data_cleaner
-    data_cleaner = DataCleaner(get_supabase, CLEANUP_AGE_DAYS, CLEANUP_INTERVAL_MINUTES)
+    data_cleaner = DataCleaner(get_supabase, CLEANUP_AGE_DAYS, CLEANUP_INTERVAL_MINUTES, CLEANUP_WHITELIST)
     data_cleaner.start()
     yield
     data_cleaner.stop()
