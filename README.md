@@ -52,6 +52,10 @@ Just like a diet needs balance across food groups, a child's play environment ne
 
 ![Agent overview](airflow/doc/agent-overview.png)
 
+## Database layout
+
+![Database layout](backend/doc/database-layout.png)
+
 ## What It Does
 
 Simply upload a photo of your playroom, enter your child's age, and Playroom Diet delivers:
