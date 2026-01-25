@@ -125,7 +125,12 @@ To enable the O*NET analysis and career forecasting, the underlying Postgres dat
 **Data import process:**
 The raw O*NET text files are tab-delimited. They were converted to CSV and imported into Supabase. The `abilities` table contains ~93k rows of skill mappings.
 
-### SQL Functions
+```bash
+sed 's/\t/","/g; s/^/"/; s/$/"/' Abilities.txt | sed '1s/.*/onetsoc_code,element_id,element_name,scale_id,data_value,n,standard_error,lower_ci,upper_ci,recommend_suppress,not_relevant,date,domain_source/' > abilities.csv
+sed 's/\t/","/g; s/^/"/; s/$/"/' "Occupation Data.txt" | sed '1s/.*/onetsoc_code,title,description/' > occupations.csv
+```
+
+### SQL functions
 
 The `analyze_playroom` agent uses a custom SQL function to perform efficient joins between skills and careers. This function must be present in the database:
 
