@@ -138,13 +138,13 @@ The `analyze_playroom` agent uses a custom SQL function to perform efficient joi
 create or replace function get_careers_for_skill(skill_name text)
 returns table (job_title text)
 language sql
+set search_path = public
 as $$
   select o.title
   from occupations o
   join abilities a on o.onetsoc_code = a.onetsoc_code
   where a.element_name = skill_name
     and a.scale_id = 'LV'
-    -- The Fix: Cast the text column to a number before comparing
     and (a.data_value::numeric) > 4.5
   order by (a.data_value::numeric) desc
   limit 5;
