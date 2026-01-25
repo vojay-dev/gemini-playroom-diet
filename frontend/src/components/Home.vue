@@ -109,19 +109,22 @@ const handleSubmit = async () => {
           <h1 class="text-4xl font-semibold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent" style="font-family: 'Fredoka', sans-serif;">
             Playroom Diet
           </h1>
-          <p class="text-sm opacity-60 mt-1">AI-powered child development analysis</p>
+          <p class="text-sm opacity-60 mt-1">Because play needs balance, just like a diet</p>
         </div>
 
         <div class="p-6">
           <p class="text-base mb-6">
             Turn toy chaos into a
             <span class="font-bold text-primary">science-backed</span>
-            growth plan. Get a 6-month roadmap, plus a Play Quest to start today with what you have.
+            growth plan. 4 AI agents map your toys to the O*NET framework, forecast future career skills, and create a 6-month roadmap.
           </p>
 
           <!-- Tech stack -->
           <p class="text-xs opacity-50 mb-3">Built with:</p>
           <div class="flex flex-wrap justify-center gap-3 mb-5">
+            <div class="badge badge-md badge-soft badge-primary gap-1 p-2">
+              <span>🧠</span> AI Agents
+            </div>
             <div class="badge badge-md badge-soft badge-primary gap-1 p-2">
               <span>🤖</span> Gemini 3 Flash
             </div>
@@ -315,7 +318,7 @@ const handleSubmit = async () => {
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
                 </svg>
-                Toy Picks
+                Career Skills
               </div>
             </div>
           </div>

@@ -13,7 +13,7 @@ import { RouterLink } from 'vue-router'
             Playroom Diet
           </h1>
           <p class="py-6 text-xl opacity-80">
-            AI-powered child development analysis that turns your chaotic toy pile into a science-backed growth plan - plus a Play Quest to start improving today.
+            Just like a diet needs balance, so does play. 4 AI agents analyze your toys, map them to the O*NET professional skills framework, and forecast which careers those skills support.
           </p>
           <RouterLink to="/" class="btn btn-primary gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -38,7 +38,7 @@ import { RouterLink } from 'vue-router'
               <div class="text-4xl mb-2">🤯</div>
               <h3 class="card-title">Toy Overload</h3>
               <p class="opacity-70">
-                Parents often accumulate toys without knowing which developmental skills they actually support. The result? Gaps in crucial areas like fine motor skills, cognitive development, or social-emotional growth.
+                Parents accumulate toys without knowing which developmental skills they support. Like an unbalanced diet, play environments often have gaps in crucial areas like fine motor skills, cognitive development, or social-emotional growth.
               </p>
             </div>
           </div>
@@ -64,7 +64,7 @@ import { RouterLink } from 'vue-router'
         <div class="flex flex-col md:flex-row gap-8 items-center">
           <div class="flex-1">
             <p class="text-lg mb-4">
-              Playroom Diet uses a <span class="text-primary font-semibold">multi-agent AI pipeline</span> powered by Google's Gemini 3 to analyze your playroom and provide personalized toy recommendations.
+              Playroom Diet uses <span class="text-primary font-semibold">4 specialized AI agents</span> orchestrated by Apache Airflow and powered by Google's Gemini 3 to treat play as your child's "job" - mapping toys to professional skill frameworks.
             </p>
             <ul class="space-y-3">
               <li class="flex items-start gap-3">
@@ -81,11 +81,15 @@ import { RouterLink } from 'vue-router'
               </li>
               <li class="flex items-start gap-3">
                 <span class="text-2xl">🗺️</span>
-                <span><strong>Receive a roadmap</strong> with 3 targeted toy recommendations</span>
+                <span><strong>Receive a roadmap</strong> with safety-verified toy recommendations</span>
+              </li>
+              <li class="flex items-start gap-3">
+                <span class="text-2xl">💼</span>
+                <span><strong>See career connections</strong> - which professions use these skills</span>
               </li>
               <li class="flex items-start gap-3">
                 <span class="text-2xl">🎮</span>
-                <span><strong>Get a Play Quest</strong> - an activity using toys you already own</span>
+                <span><strong>Get a Play Quest</strong> - start improving today with toys you own</span>
               </li>
             </ul>
           </div>
@@ -154,7 +158,7 @@ import { RouterLink } from 'vue-router'
           </div>
         </div>
         <p class="text-center mt-6 opacity-70">
-          Based on the <span class="font-semibold text-primary">O*NET Content Model</span> - the same framework used by the U.S. Department of Labor to classify workplace abilities.
+          Based on the <span class="font-semibold text-primary">O*NET Content Model</span> - the same framework used by the U.S. Department of Labor to predict career success across 1,000+ occupations.
         </p>
       </div>
     </div>
@@ -166,6 +170,9 @@ import { RouterLink } from 'vue-router'
           Built With
         </h2>
         <div class="flex flex-wrap justify-center gap-3">
+          <div class="badge badge-lg badge-soft badge-primary gap-2 p-4">
+            <span>🧠</span> AI Agents
+          </div>
           <div class="badge badge-lg badge-soft badge-primary gap-2 p-4">
             <span>🤖</span> Gemini 3 Flash
           </div>
@@ -210,24 +217,24 @@ import { RouterLink } from 'vue-router'
         </h2>
         <div class="grid md:grid-cols-2 gap-6">
           <div class="flex gap-4">
-            <div class="text-3xl">🔒</div>
+            <div class="text-3xl">💼</div>
             <div>
-              <h3 class="font-semibold">Privacy First</h3>
-              <p class="opacity-70 text-sm">Images are analyzed and never stored permanently. Your family's privacy matters.</p>
+              <h3 class="font-semibold">Career Forecasting</h3>
+              <p class="opacity-70 text-sm">See which professions rely on the skills your toys develop - from surgeons to engineers.</p>
             </div>
           </div>
           <div class="flex gap-4">
-            <div class="text-3xl">⚡</div>
+            <div class="text-3xl">🔒</div>
             <div>
-              <h3 class="font-semibold">Fast Analysis</h3>
-              <p class="opacity-70 text-sm">Get results in under a minute thanks to our optimized multi-agent pipeline.</p>
+              <h3 class="font-semibold">Privacy First</h3>
+              <p class="opacity-70 text-sm">Images are automatically deleted after analysis. Your family's privacy matters.</p>
             </div>
           </div>
           <div class="flex gap-4">
             <div class="text-3xl">🛡️</div>
             <div>
-              <h3 class="font-semibold">Safety Checked</h3>
-              <p class="opacity-70 text-sm">Every recommendation is verified for age-appropriateness and safety.</p>
+              <h3 class="font-semibold">CPSC Safety Checked</h3>
+              <p class="opacity-70 text-sm">Every recommendation is validated against Consumer Product Safety Commission guidelines.</p>
             </div>
           </div>
           <div class="flex gap-4">
@@ -262,7 +269,7 @@ import { RouterLink } from 'vue-router'
           Ready to Optimize Your Playroom?
         </h2>
         <p class="opacity-70 mb-8">
-          Take a photo of your playroom and let our AI find the developmental gaps in your toy collection.
+          Take a photo of your playroom and let our AI ensure your child's play diet is balanced for optimal development.
         </p>
         <RouterLink to="/" class="btn btn-primary gap-2">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

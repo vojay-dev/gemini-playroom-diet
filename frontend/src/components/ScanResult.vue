@@ -140,7 +140,7 @@ onUnmounted(() => {
             <div class="sparkle s5"></div>
           </div>
 
-          <p class="opacity-70">This may take a couple of minutes. We're using AI agents to analyze the toys.</p>
+          <p class="opacity-70">This may take a couple of minutes. 4 AI agents are analyzing toys, mapping skills, checking safety, and creating your Play Quest.</p>
           <div class="flex flex-col items-center mt-6 gap-2">
             <div class="flex items-center gap-2 text-sm opacity-50">
               <span class="loading loading-ring loading-xs"></span>
