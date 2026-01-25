@@ -9,6 +9,8 @@ from supabase import create_client
 from pydantic_ai import BinaryContent, Agent
 from pydantic_ai.common_tools.duckduckgo import duckduckgo_search_tool
 
+from include.onet import get_careers_for_skill
+
 _POSTGRES_CONN_ID = "postgres_playroom_diet"
 
 
@@ -212,8 +214,9 @@ def process_scans():
                 - Which of the 6 categories it maps to in skill_category
                 - A specific toy recommendation in recommended_toy
                 - Scientific reasoning citing the O*NET ability
+                - Use the `get_careers_for_skill` tool to mention 1-2 future professions that rely on this skill.
             """,
-            tools=[duckduckgo_search_tool()]
+            tools=[get_careers_for_skill]
         ),
         max_active_tis_per_dag=2
     )

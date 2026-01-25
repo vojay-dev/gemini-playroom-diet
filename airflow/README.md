@@ -37,7 +37,7 @@ The Dag uses **atomic scan claiming** via `UPDATE ... FOR UPDATE SKIP LOCKED` to
     │         │
     ▼         ▼
 ┌────────┐  ┌─────────────────────┐
-│ quest  │  │  analyze_playroom   │ ← Agent 2: O*NET skill mapping and toy analysis
+│ quest  │  │  analyze_playroom   │ ← Agent 2: O*NET skill mapping and career forecasting
 └───┬────┘  └──────────┬──────────┘ ← Agent 3: Focus on existing toys to generate a play quest
     │                  │
     │                  ▼
@@ -84,13 +84,19 @@ For Playroom Diet, all agents are defined with a model, a strict Pydantic output
 
 - **Model**: Gemini 3 Flash
 - **Input**: Toy inventory + child's age
+- **Tools**: `get_careers_for_skill` (database lookup)
 - **Output**: `AnalysisResult` with skill scores and 3-item roadmap
-- **Purpose**: Map toys to O*NET abilities, score 6 development categories, identify gaps
+- **Purpose**: Map toys to O*NET abilities, score 6 development categories, identify gaps, and forecast future careers.
+
+**Career forecasting**
+This agent uses a custom tool to query the O*NET database. It connects identified toy-based skills (like "Manual Dexterity") to high-value future careers.
+> *"While magnetic tiles develop basic spatial awareness... High levels of Manual Dexterity are critical for careers like Oral and Maxillofacial Surgeons and General Dentists."*
 
 ### Agent 3: `safety_check`
 
 - **Model**: Gemini 3 Flash
 - **Input**: Development roadmap + child's age
+- **Tools**: `duckduckgo_search_tool` (to search current data about products)
 - **Output**: `ToyRecommendation` with safety decisions
 - **Purpose**: Validate against CPSC guidelines, substitute unsafe toys, generate shopping queries
 
@@ -101,6 +107,44 @@ For Playroom Diet, all agents are defined with a model, a strict Pydantic output
 - **Output**: `PlayQuest` activity details
 - **Purpose**: Create an immediate play activity using existing toys
 - **Note**: Runs in parallel with Agent 2
+
+## Database requirements
+
+To enable the O*NET analysis and career forecasting, the underlying Postgres database (Supabase) must be populated with official O*NET data (Version 28.0+).
+
+### Required tables
+
+1. **`scans`**: Stores the job state, image path, and final JSON result (see backend [README](../backend/README.md)).
+2. **`occupations`**: O*NET occupation data (Imported from `Occupation Data.txt`).
+3. **`abilities`**: O*NET ability scores (Imported from `Abilities.txt`).
+
+**Source:**
+- [O*NET abilities data (txt)](https://www.onetcenter.org/dl_files/database/db_30_1_text/Abilities.txt)
+- [O*NET occupations data (txt)](https://www.onetcenter.org/dl_files/database/db_30_1_text/Occupation%20Data.txt)
+
+**Data import process:**
+The raw O*NET text files are tab-delimited. They were converted to CSV and imported into Supabase. The `abilities` table contains ~93k rows of skill mappings.
+
+### SQL Functions
+
+The `analyze_playroom` agent uses a custom SQL function to perform efficient joins between skills and careers. This function must be present in the database:
+
+```sql
+create or replace function get_careers_for_skill(skill_name text)
+returns table (job_title text)
+language sql
+as $$
+  select o.title
+  from occupations o
+  join abilities a on o.onetsoc_code = a.onetsoc_code
+  where a.element_name = skill_name
+    and a.scale_id = 'LV'
+    -- The Fix: Cast the text column to a number before comparing
+    and (a.data_value::numeric) > 4.5
+  order by (a.data_value::numeric) desc
+  limit 5;
+$$;
+```
 
 ## Pydantic models
 
