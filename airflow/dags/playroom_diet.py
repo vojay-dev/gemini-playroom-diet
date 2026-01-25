@@ -251,7 +251,8 @@ def process_scans():
                 - Preserve the timeframe ("now", "3_months", "6_months") from the input.
                 - Decision must be "APPROVED" or "SUBSTITUTED".
                 - Provide a clear 'safety_context' explaining your decision for each toy.
-            """
+            """,
+            tools=[duckduckgo_search_tool()]
         ),
         max_active_tis_per_dag=2
     )

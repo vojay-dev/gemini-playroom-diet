@@ -23,34 +23,7 @@ The Dag uses **atomic scan claiming** via `UPDATE ... FOR UPDATE SKIP LOCKED` to
 
 ## Pipeline architecture
 
-```
-┌─────────────────┐
-│  get_new_scans  │ ← Atomic claim of open scans
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│  analyze_image  │ ← Agent 1: Vision AI extracts toy inventory
-└────────┬────────┘
-         │
-    ┌────┴────┐
-    │         │
-    ▼         ▼
-┌────────┐  ┌─────────────────────┐
-│ quest  │  │  analyze_playroom   │ ← Agent 2: O*NET skill mapping and career forecasting
-└───┬────┘  └──────────┬──────────┘ ← Agent 3: Focus on existing toys to generate a play quest
-    │                  │
-    │                  ▼
-    │       ┌─────────────────┐
-    │       │  safety_check   │ ← Agent 4: CPSC safety audit
-    │       └────────┬────────┘
-    │                │
-    └────────┬───────┘
-             ▼
-      ┌─────────────┐
-      │ save_result │ → Updates Supabase with results
-      └─────────────┘
-```
+![Agent overview](doc/agent-overview.png)
 
 ## AI agents and the Airflow AI SDK
 
@@ -68,7 +41,7 @@ For Playroom Diet, all agents are defined with a model, a strict Pydantic output
         model="gemini-3-flash-preview",
         output_type=AnalysisResult,
         system_prompt="...",
-        tools=[duckduckgo_search_tool()]
+        tools=[get_careers_for_skill]
     )
 )
 ```
