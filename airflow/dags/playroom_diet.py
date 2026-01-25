@@ -8,6 +8,7 @@ import httpx
 from supabase import create_client
 from pydantic_ai import BinaryContent, Agent
 from pydantic_ai.common_tools.duckduckgo import duckduckgo_search_tool
+from pendulum import duration
 
 from include.onet import get_careers_for_skill
 
@@ -84,7 +85,13 @@ def get_image_bytes(image_path: str) -> bytes:
         return response.content
 
 
-@dag(max_active_runs=2)  # Parallel runs are fine, race conditions handled on DB level
+@dag(
+    max_active_runs=2,  # Parallel runs are fine, race conditions handled on DB level
+    default_args={
+        "retries": 2,
+        "retry_delay": duration(seconds=30)
+    }
+)
 def process_scans():
 
     # Atomically claim scans by setting status to 'in_flight'
@@ -100,7 +107,6 @@ def process_scans():
                 SELECT id FROM public.scans
                 WHERE status = 'processing'
                 FOR UPDATE SKIP LOCKED
-                LIMIT 10
             )
             RETURNING id, image_path, child_age;
         """,
@@ -214,7 +220,8 @@ def process_scans():
                 - Which of the 6 categories it maps to in skill_category
                 - A specific toy recommendation in recommended_toy
                 - Scientific reasoning citing the O*NET ability
-                - Use the `get_careers_for_skill` tool to mention 1-2 future professions that rely on this skill.
+                - Use the `get_careers_for_skill` tool to mention 1-2 future professions that rely on this skill
+                - Add a career forecasting to the reasoning of the roadmap items, based on the O*NET data
             """,
             tools=[get_careers_for_skill]
         ),
