@@ -18,6 +18,24 @@ const expandedItem = ref(0)
 const showShareModal = ref(false)
 const hasShownConfetti = ref(false)
 let pollInterval = null
+let messageInterval = null
+
+const loadingMessages = [
+  { text: "Wrangling neural networks...", icon: "🧠" },
+  { text: "Building a LEGO castle...", icon: "🏰" },
+  { text: "Teaching robots to play...", icon: "🤖" },
+  { text: "Consulting the toy experts...", icon: "🧸" },
+  { text: "Counting building blocks...", icon: "🧱" },
+  { text: "Analyzing play patterns...", icon: "🔬" },
+  { text: "Mapping skills to careers...", icon: "💼" },
+  { text: "Checking safety guidelines...", icon: "🛡️" },
+  { text: "Crafting your Play Quest...", icon: "🎮" },
+  { text: "Connecting the dots...", icon: "✨" },
+  { text: "Thinking like a 5-year-old...", icon: "🎨" },
+  { text: "Calibrating fun detectors...", icon: "📡" },
+]
+const currentMessageIndex = ref(0)
+const currentMessage = computed(() => loadingMessages[currentMessageIndex.value])
 
 const roadmap = computed(() => result.value?.roadmap || [])
 const skillScores = computed(() => result.value?.skill_scores || {})
@@ -100,10 +118,14 @@ const stopPolling = () => {
 onMounted(() => {
   fetchScan()
   pollInterval = setInterval(fetchScan, 30000)
+  messageInterval = setInterval(() => {
+    currentMessageIndex.value = (currentMessageIndex.value + 1) % loadingMessages.length
+  }, 3000)
 })
 
 onUnmounted(() => {
   stopPolling()
+  if (messageInterval) clearInterval(messageInterval)
 })
 </script>
 
@@ -140,13 +162,42 @@ onUnmounted(() => {
             <div class="sparkle s5"></div>
           </div>
 
-          <p class="opacity-70">This may take a couple of minutes. 4 AI agents are analyzing toys, mapping skills, checking safety, and creating your Play Quest.</p>
-          <div class="flex flex-col items-center mt-6 gap-2">
-            <div class="flex items-center gap-2 text-sm opacity-50">
-              <span class="loading loading-ring loading-xs"></span>
-              Checking again in 30 seconds...
+          <!-- Rotating loading message -->
+          <div class="my-4 h-12 flex flex-col items-center justify-center">
+            <div
+              :key="currentMessageIndex"
+              class="loading-message flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-primary/20 to-secondary/20 border border-white/10"
+            >
+              <span class="text-lg animate-bounce">{{ currentMessage.icon }}</span>
+              <span class="text-sm font-medium bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                {{ currentMessage.text }}
+              </span>
             </div>
-            <p class="font-mono text-xs opacity-40">ID: {{ scanId }}</p>
+          </div>
+
+          <p class="text-sm opacity-50 mb-4">This may take a couple of minutes.</p>
+
+          <div class="flex flex-wrap justify-center gap-2 max-w-sm">
+            <div class="badge badge-ghost gap-1.5 py-3">
+              <span>👁️</span> Detecting toys
+            </div>
+            <div class="badge badge-ghost gap-1.5 py-3">
+              <span>🧠</span> Mapping skills
+            </div>
+            <div class="badge badge-ghost gap-1.5 py-3">
+              <span>🛡️</span> Safety check
+            </div>
+            <div class="badge badge-ghost gap-1.5 py-3">
+              <span>🎮</span> Play Quest
+            </div>
+          </div>
+
+          <div class="flex flex-col items-center mt-6 gap-2">
+            <div class="flex items-center gap-2 text-xs opacity-50">
+              <span class="loading loading-ring loading-xs text-primary"></span>
+              Auto-refresh in 30s
+            </div>
+            <p class="font-mono text-xs opacity-30">{{ scanId }}</p>
           </div>
         </div>
       </div>
@@ -628,5 +679,21 @@ onUnmounted(() => {
     linear-gradient(rgba(34, 211, 238, 0.1) 1px, transparent 1px),
     linear-gradient(90deg, rgba(34, 211, 238, 0.1) 1px, transparent 1px);
   background-size: 20px 20px;
+}
+
+/* loading message animation */
+.loading-message {
+  animation: message-pop 0.4s ease-out;
+}
+
+@keyframes message-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.9) translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 </style>
