@@ -10,7 +10,8 @@
 
 **Try it yourself**: [playroom-diet.web.app](https://playroom-diet.web.app/)
 
-_Keep in mind: this is a hackathon prototype. Daily limits apply to control costs._
+> [!NOTE]
+> _Keep in mind: this is a hackathon prototype. Daily limits apply to control costs._
 
 ![Playroom Mockup](doc/mockup.png)
 
@@ -125,6 +126,7 @@ Don't wait for new toys to arrive. A dedicated AI agent creates a fun, structure
 
 ## How it was built
 
+> [!NOTE]
 > **Terminology:** The analysis of a playroom is called a `scan` throughout the project. A `scan` can have multiple `states` which are explained later.
 
 ### Tech stack
@@ -318,4 +320,17 @@ Building Playroom Diet pushed me to think beyond single-prompt AI demos:
 
 ---
 
-**The skills they build today become the strengths they carry forever.**
+> [!IMPORTANT]
+> **The skills they build today become the strengths they carry forever.**
+
+---
+
+## Impressions
+
+![Screenshot 1](doc/screen1.png)
+
+![Screenshot 2](doc/screen2.png)
+
+![Screenshot 3](doc/screen3.png)
+
+![Screenshot 4](doc/screen4.png)
