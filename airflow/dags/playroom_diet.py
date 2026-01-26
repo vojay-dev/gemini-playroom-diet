@@ -211,6 +211,11 @@ def process_scans():
                 - Priority 2 (timeframe: "3_months"): Second priority for near-term
                 - Priority 3 (timeframe: "6_months"): Third priority for longer-term growth
 
+                **Age-appropriate recommendations:**
+                The input includes the child's age. Recommend toys that children of that age typically enjoy.
+                Use the age as a guide, not a strict limit - a range of ±1-2 years is acceptable.
+                Avoid recommending toddler toys for school-age children or complex toys for toddlers.
+
                 **Requirements:**
                 - In status_quo, summarize the dominant O*NET Ability clusters present.
                 - In skill_scores, provide realistic scores based on the toy inventory analysis.
@@ -218,7 +223,7 @@ def process_scans():
                 - The specific O*NET Ability Name in missing_skill
                 - The O*NET ID Code in skill_id (e.g., "1.A.1.f.2")
                 - Which of the 6 categories it maps to in skill_category
-                - A specific toy recommendation in recommended_toy
+                - A specific toy recommendation in recommended_toy that is age-appropriate
                 - Scientific reasoning citing the O*NET ability
                 - Use the `get_careers_for_skill` tool to mention 1-2 future professions that rely on this skill
                 - Add a career forecasting to the reasoning of the roadmap items, based on the O*NET data
@@ -227,10 +232,13 @@ def process_scans():
         ),
         max_active_tis_per_dag=2
     )
-    def analyze_playroom(toy_inventory: dict):
-        return json.dumps(toy_inventory)
+    def analyze_playroom(zipped_input: tuple):
+        toy_inventory, scan_record = zipped_input
+        child_age = scan_record[2]
+        return json.dumps({"toys": toy_inventory.get("items", []), "child_age": child_age})
 
-    analysis_results = analyze_playroom.expand(toy_inventory=toy_inventories)
+    zipped_analysis_input = toy_inventories.zip(_get_new_scans.output)
+    analysis_results = analyze_playroom.expand(zipped_input=zipped_analysis_input)
 
     @task.agent(
         agent=Agent(
