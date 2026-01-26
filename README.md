@@ -34,14 +34,6 @@ This project demonstrates a **multi-agent AI pipeline** using Gemini 3 and Apach
 
 ## Potential impact
 
-Here is a draft for the **Potential Impact** section, written to match the tone and style of your existing README.
-
-I have broken it down into a few key pillars to make it readable and compelling.
-
-***
-
-## Potential impact
-
 **Parenting is arguably the most important job in the world, yet it is one of the few fields that has remained largely untouched by advanced AI.**
 
 As a parent of two, I realized that we often manage our health, finances, and work with sophisticated AI tools, but we manage our children's development with guesswork and by succumbing to toy marketing. **Playroom Diet** addresses this gap by shifting the paradigm from *consuming toys* to *curating development*.
