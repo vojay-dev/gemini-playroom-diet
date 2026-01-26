@@ -232,6 +232,25 @@ For Playroom Diet, all agents are defined with a model, a strict Pydantic output
 This agent uses a custom tool to query the O*NET database. It connects identified toy-based skills (like "Manual Dexterity") to high-value future careers.
 > *"While magnetic tiles develop basic spatial awareness... High levels of Manual Dexterity are critical for careers like Oral and Maxillofacial Surgeons and General Dentists."*
 
+The tool is backed by a custom SQL function that joins the O*NET abilities and occupations tables to find the top 5 careers requiring high levels of a given skill:
+
+```sql
+create or replace function get_careers_for_skill(skill_name text)
+returns table (job_title text)
+language sql
+set search_path = public
+as $$
+  select o.title
+  from occupations o
+  join abilities a on o.onetsoc_code = a.onetsoc_code
+  where a.element_name = skill_name
+    and a.scale_id = 'LV'
+    and (a.data_value::numeric) > 4.5
+  order by (a.data_value::numeric) desc
+  limit 5;
+$$;
+```
+
 🤖 **Agent 3:** _CPSC Child Safety Agent_ `safety_check`
 
 - **Model**: Gemini 3 Flash
