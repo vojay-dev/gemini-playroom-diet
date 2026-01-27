@@ -4,11 +4,11 @@
 
 > Multi-agent AI with Apache Airflow and Gemini meets child development. Just like a diet needs balance, so does play. With Gemini 3, O*NET data, and an intuitive UI, you get a personalized roadmap, because parenting is hard enough.
 
-**Playroom Diet** is an AI-powered child development tool that transforms chaotic toy piles into science-backed growth plans. Upload a photo of your playroom, and a multi-agent AI system analyzes the toys, maps them to professional skill frameworks, and creates a personalized six-month development roadmap. It also delivers play quests that encourage creative use of the toys you already own. Think of it as a nutritionist for your child’s play, ensuring a balanced diet of developmental stimulation.
+**Playroom Diet** is an AI-powered child development tool that transforms chaotic toy piles into science-backed growth plans. Upload a photo of your child's playroom, and a multi-agent AI system analyzes the toys, maps them to professional skill frameworks, and creates a personalized six-month development roadmap. It also delivers play quests that encourage creative use of the toys you already own. Think of it as a nutritionist for your child’s play, ensuring a balanced diet of developmental stimulation.
 
 > Next time your kids make a mess in their playroom, don't ask them to clean up right away. Take a photo and use that data.
 
-**Try it yourself**: [playroom-diet.web.app](https://playroom-diet.web.app/)
+**Try it yourself**: [playroom-diet.app](https://playroom-diet.app/)
 
 > [!NOTE]
 > _Keep in mind: this is a hackathon prototype. Daily limits apply to control costs._
@@ -326,6 +326,8 @@ Building Playroom Diet pushed me to think beyond single-prompt AI demos:
 
 - **Toy donation recommendation:** Add a feature to suggest toys for donations for other kids, and directly link toy donation websites based on over-developed abilities.
 - **Wish list:** Include an optional wish list where parents can list toys their kids want, allowing these preferences to be incorporated into recommendations. This can also involve suggesting variations of wishes to create a better balance of play. This could be an interesting feature for Christmas 🎄.
+- **Toy variations:** Generate more toy recommendations per roadmap stage, so that parents can dismiss items and have alternatives prepared.
+- **Progress visualization:** Use Airflow callback functions to update the status of scans after each step, and use this data to visualize the progress at the loading screen.
 - **Scaling:** To keep costs near zero, all components are scaled to the minimum. A playroom scan takes a couple of minutes, mainly because the backend and Airflow infrastructure automatically scale to zero and often require a warm-up phase. Depending on how well the project is received, this can be improved by scaling the infrastructure accordingly.
 - **More parenting support:** Toy management is just the beginning. Parenting is an underexplored AI use case, and many features in this area can be added.
 
