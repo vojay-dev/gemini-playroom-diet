@@ -5,9 +5,8 @@ import { router } from './router.js'
 import { createGtag } from 'vue-gtag'
 
 const app = createApp(App)
+const gtag = createGtag({
+  tagId: 'G-SNNQEEFJLK'
+})
 
-app.use(createGtag({
-  config: { id: "G-SNNQEEFJLK" }
-}, router))
-
-app.use(router).mount('#app')
+app.use(router).use(gtag).mount('#app')
