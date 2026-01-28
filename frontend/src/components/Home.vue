@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
+import { event as gtagEvent } from 'vue-gtag'
 import { useToast } from '../composables/useToast'
 import { compressImage } from '../composables/useImageCompressor'
 
@@ -86,6 +87,7 @@ const handleSubmit = async () => {
     }
 
     const data = await response.json()
+    try { gtagEvent('scan_created', { child_age: age.value, cached: data.cached || false }) } catch {}
     router.push({ path: `/scan/${data.scan_id}`, query: data.cached ? { cached: '1' } : {} })
 
   } catch (e) {
