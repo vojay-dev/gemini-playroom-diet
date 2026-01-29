@@ -43,6 +43,11 @@ const statusQuo = computed(() => result.value?.status_quo || '')
 const toyInventory = computed(() => result.value?.toy_inventory || [])
 const playQuest = computed(() => result.value?.play_quest || null)
 const activeTab = ref('roadmap')
+const hoveredToyIndex = ref(null)
+
+const toggleToy = (index) => {
+  hoveredToyIndex.value = hoveredToyIndex.value === index ? null : index
+}
 
 const projectedScores = computed(() => {
   if (!skillScores.value || !roadmap.value.length) return null
@@ -422,36 +427,38 @@ onUnmounted(() => {
                 <!-- Grid -->
                 <div class="absolute inset-0 ai-grid"></div>
 
-                <!-- Boxes -->
-                <svg class="absolute inset-0 w-full h-full" preserveAspectRatio="none">
-                  <defs>
-                    <linearGradient id="boxGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stop-color="rgba(34, 211, 238, 0.4)" />
-                      <stop offset="100%" stop-color="rgba(168, 85, 247, 0.4)" />
-                    </linearGradient>
-                  </defs>
-                  <!-- Rects -->
-                  <g v-for="(toy, index) in toyInventory" :key="index">
-                    <!-- fill -->
-                    <rect
-                      :x="`${toy.bbox.x * 100}%`"
-                      :y="`${toy.bbox.y * 100}%`"
-                      :width="`${toy.bbox.w * 100}%`"
-                      :height="`${toy.bbox.h * 100}%`"
-                      fill="url(#boxGradient)"
-                    />
-                    <!-- border -->
-                    <rect
-                      :x="`${toy.bbox.x * 100}%`"
-                      :y="`${toy.bbox.y * 100}%`"
-                      :width="`${toy.bbox.w * 100}%`"
-                      :height="`${toy.bbox.h * 100}%`"
-                      fill="none"
-                      stroke="rgba(34, 211, 238, 0.8)"
-                      stroke-width="1"
-                    />
-                  </g>
-                </svg>
+                <!-- Detection boxes -->
+                <div
+                  v-for="(toy, index) in toyInventory"
+                  :key="index"
+                  class="toy-box absolute cursor-pointer"
+                  :class="{ 'is-active': hoveredToyIndex === index }"
+                  :style="{
+                    left: `${toy.bbox.x * 100}%`,
+                    top: `${toy.bbox.y * 100}%`,
+                    width: `${toy.bbox.w * 100}%`,
+                    height: `${toy.bbox.h * 100}%`,
+                    animationDelay: `${index * 0.15}s`
+                  }"
+                  @mouseenter="hoveredToyIndex = index"
+                  @mouseleave="hoveredToyIndex = null"
+                  @click.stop="toggleToy(index)"
+                >
+                  <!-- Tooltip -->
+                  <div
+                    class="toy-tooltip"
+                    :class="{ 'is-visible': hoveredToyIndex === index }"
+                  >
+                    <span class="font-medium">{{ toy.item_name }}</span>
+                    <span class="opacity-70 text-[10px]">{{ toy.play_mode }} · x{{ toy.count }}</span>
+                  </div>
+
+                  <!-- Corner accents -->
+                  <div class="corner-accent top-0 left-0 border-t-2 border-l-2"></div>
+                  <div class="corner-accent top-0 right-0 border-t-2 border-r-2"></div>
+                  <div class="corner-accent bottom-0 left-0 border-b-2 border-l-2"></div>
+                  <div class="corner-accent bottom-0 right-0 border-b-2 border-r-2"></div>
+                </div>
               </div>
               <p class="text-base-content/80 leading-relaxed">{{ statusQuo }}</p>
               <!-- Legend -->
@@ -673,12 +680,109 @@ onUnmounted(() => {
   }
 }
 
-/* grid */
+/* grid - base layer */
 .ai-grid {
   background-image:
-    linear-gradient(rgba(34, 211, 238, 0.1) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(34, 211, 238, 0.1) 1px, transparent 1px);
-  background-size: 20px 20px;
+    linear-gradient(rgba(34, 211, 238, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(34, 211, 238, 0.05) 1px, transparent 1px);
+  background-size: 24px 24px;
+  mask-image: radial-gradient(ellipse at center, black 50%, transparent 90%);
+  -webkit-mask-image: radial-gradient(ellipse at center, black 50%, transparent 90%);
+}
+
+/* grid - bright scan sweep */
+.ai-grid::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(34, 211, 238, 0.25) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(34, 211, 238, 0.25) 1px, transparent 1px);
+  background-size: 24px 24px;
+  mask-image:
+    radial-gradient(ellipse at center, black 50%, transparent 90%),
+    linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.8) 40%, black 50%, rgba(0,0,0,0.8) 60%, transparent 100%);
+  mask-composite: intersect;
+  -webkit-mask-image:
+    linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.8) 40%, black 50%, rgba(0,0,0,0.8) 60%, transparent 100%);
+  -webkit-mask-size: 100% 40%;
+  -webkit-mask-repeat: no-repeat;
+  mask-size: 100% 40%;
+  mask-repeat: no-repeat;
+  animation: grid-scan 4s ease-in-out infinite;
+}
+
+@keyframes grid-scan {
+  0% { mask-position: 0 -40%; -webkit-mask-position: 0 -40%; }
+  100% { mask-position: 0 140%; -webkit-mask-position: 0 140%; }
+}
+
+/* detection boxes */
+.toy-box {
+  background: linear-gradient(135deg, rgba(34, 211, 238, 0.22), rgba(168, 85, 247, 0.22));
+  border: 1px solid rgba(34, 211, 238, 0.55);
+  transition: all 0.3s ease;
+  animation: box-appear 0.5s ease-out both;
+}
+
+.toy-box:hover,
+.toy-box.is-active {
+  background: linear-gradient(135deg, rgba(34, 211, 238, 0.2), rgba(168, 85, 247, 0.2));
+  border-color: rgba(34, 211, 238, 0.8);
+  box-shadow: 0 0 12px rgba(34, 211, 238, 0.3), inset 0 0 12px rgba(34, 211, 238, 0.1);
+}
+
+@keyframes box-appear {
+  0% {
+    opacity: 0;
+    border-color: transparent;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* corner accents */
+.corner-accent {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-color: rgba(34, 211, 238, 0.6);
+  transition: all 0.3s ease;
+}
+
+.toy-box:hover .corner-accent,
+.toy-box.is-active .corner-accent {
+  width: 12px;
+  height: 12px;
+  border-color: rgba(34, 211, 238, 1);
+}
+
+/* tooltip */
+.toy-tooltip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(34, 211, 238, 0.3);
+  border-radius: 8px;
+  padding: 4px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  white-space: nowrap;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.9);
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.2s ease;
+}
+
+.toy-tooltip.is-visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
 }
 
 /* loading message animation */
