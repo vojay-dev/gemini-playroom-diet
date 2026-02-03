@@ -37,6 +37,9 @@ const loadingMessages = [
 const currentMessageIndex = ref(0)
 const currentMessage = computed(() => loadingMessages[currentMessageIndex.value])
 
+// Which agent is currently "active" (0-3) based on message rotation
+const activeAgentIndex = computed(() => Math.floor(currentMessageIndex.value / 3) % 4)
+
 const roadmap = computed(() => result.value?.roadmap || [])
 const skillScores = computed(() => result.value?.skill_scores || {})
 const statusQuo = computed(() => result.value?.status_quo || '')
@@ -74,7 +77,39 @@ const getRetailers = (amazonSearch) => {
     { name: 'Amazon', url: `https://www.amazon.com/s?k=${query}`, color: 'btn-warning' },
     { name: 'Target', url: `https://www.target.com/s?searchTerm=${query}`, color: 'btn-error' },
     { name: 'Walmart', url: `https://www.walmart.com/search?q=${query}`, color: 'btn-info' },
+    { name: 'Google', url: `https://www.google.com/search?tbm=shop&q=${query}`, color: 'btn-neutral' },
   ]
+}
+
+const getCalendarUrl = (item) => {
+  const toyName = item.final_toy || item.recommended_toy
+  const title = encodeURIComponent(`Get toy: ${toyName}`)
+  const details = encodeURIComponent(`Playroom Diet recommendation for your child's development.\n\nToy: ${toyName}\nSkill: ${item.missing_skill}\nReason: ${item.reasoning}`)
+
+  // Calculate target date based on timeframe
+  const now = new Date()
+  let targetDate = new Date(now)
+  if (item.timeframe === '3_months') {
+    targetDate.setMonth(targetDate.getMonth() + 3)
+  } else if (item.timeframe === '6_months') {
+    targetDate.setMonth(targetDate.getMonth() + 6)
+  }
+
+  // Format as YYYYMMDD for Google Calendar (all-day event)
+  const dateStr = targetDate.toISOString().split('T')[0].replace(/-/g, '')
+
+  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}&dates=${dateStr}/${dateStr}`
+}
+
+const copyLinkSuccess = ref(false)
+const copyLink = async () => {
+  try {
+    await navigator.clipboard.writeText(window.location.href)
+    copyLinkSuccess.value = true
+    setTimeout(() => { copyLinkSuccess.value = false }, 2000)
+  } catch (e) {
+    console.error('Failed to copy link:', e)
+  }
 }
 
 const fetchScan = async () => {
@@ -183,16 +218,16 @@ onUnmounted(() => {
           <p class="text-sm opacity-50 mb-4">This may take a couple of minutes.</p>
 
           <div class="flex flex-wrap justify-center gap-2 max-w-sm">
-            <div class="badge badge-ghost gap-1.5 py-3">
+            <div :class="['agent-badge badge gap-1.5 py-3 transition-all duration-500', activeAgentIndex === 0 ? 'badge-primary shadow-glow' : 'badge-ghost opacity-50']">
               <span>👁️</span> Detecting toys
             </div>
-            <div class="badge badge-ghost gap-1.5 py-3">
+            <div :class="['agent-badge badge gap-1.5 py-3 transition-all duration-500', activeAgentIndex === 1 ? 'badge-secondary shadow-glow' : 'badge-ghost opacity-50']">
               <span>🧠</span> Mapping skills
             </div>
-            <div class="badge badge-ghost gap-1.5 py-3">
+            <div :class="['agent-badge badge gap-1.5 py-3 transition-all duration-500', activeAgentIndex === 2 ? 'badge-warning shadow-glow' : 'badge-ghost opacity-50']">
               <span>🛡️</span> Safety check
             </div>
-            <div class="badge badge-ghost gap-1.5 py-3">
+            <div :class="['agent-badge badge gap-1.5 py-3 transition-all duration-500', activeAgentIndex === 3 ? 'badge-accent shadow-glow' : 'badge-ghost opacity-50']">
               <span>🎮</span> Play Quest
             </div>
           </div>
@@ -364,7 +399,8 @@ onUnmounted(() => {
             </div>
 
             <!-- Details -->
-            <div v-if="expandedItem === index" class="px-6 pb-6 space-y-4">
+            <Transition name="expand">
+            <div v-if="expandedItem === index" class="details-content px-6 pb-6 space-y-4">
               <div class="divider my-0"></div>
 
               <!-- Why -->
@@ -409,8 +445,21 @@ onUnmounted(() => {
                   </svg>
                   {{ retailer.name }}
                 </a>
+                <a
+                  v-if="item.timeframe !== 'now'"
+                  :href="getCalendarUrl(item)"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="btn btn-sm btn-outline btn-secondary gap-2"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  Add to Calendar
+                </a>
               </div>
             </div>
+            </Transition>
           </div>
 
           <!-- Analysis -->
@@ -609,13 +658,24 @@ onUnmounted(() => {
       <!-- Footer -->
       <div class="mt-6 mb-12 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-base-300/20 backdrop-blur-sm border border-white/5">
         <p class="font-mono text-xs opacity-40">Scan ID: {{ scanId }}</p>
-        <RouterLink to="/" class="btn btn-primary gap-2">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-          Scan Another Room
-        </RouterLink>
+        <div class="flex gap-2">
+          <button @click="copyLink" class="btn btn-secondary gap-2">
+            <svg v-if="!copyLinkSuccess" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+            <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+            {{ copyLinkSuccess ? 'Copied!' : 'Copy Link' }}
+          </button>
+          <RouterLink to="/" class="btn btn-primary gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            Scan Another Room
+          </RouterLink>
+        </div>
       </div>
 
       <!-- Modal -->
@@ -799,5 +859,39 @@ onUnmounted(() => {
     opacity: 1;
     transform: scale(1) translateY(0);
   }
+}
+
+/* agent badge glow */
+.shadow-glow {
+  box-shadow: 0 0 12px currentColor, 0 0 24px currentColor;
+  animation: pulse-glow 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 8px currentColor, 0 0 16px currentColor; }
+  50% { box-shadow: 0 0 16px currentColor, 0 0 32px currentColor; }
+}
+
+/* expand transition for roadmap details */
+.expand-enter-active,
+.expand-leave-active {
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.expand-enter-from,
+.expand-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.expand-enter-to,
+.expand-leave-from {
+  opacity: 1;
+  transform: translateY(0);
+  max-height: 500px;
 }
 </style>
