@@ -340,10 +340,22 @@ Building Playroom Diet pushed me to think beyond single-prompt AI demos:
 
 ## Impressions
 
-![Screenshot 1](doc/screen1.png)
+![Screenshot 1](doc/screenshots/screen1.png)
 
-![Screenshot 2](doc/screen2.png)
+![Screenshot 2](doc/screenshots/screen2.png)
 
-![Screenshot 3](doc/screen3.png)
+![Screenshot 3](doc/screenshots/screen3.png)
 
-![Screenshot 4](doc/screen4.png)
+![Screenshot 4](doc/screenshots/screen4.png)
+
+![Screenshot 5](doc/screenshots/screen5.png)
+
+![Screenshot 6](doc/screenshots/screen6.png)
+
+![Screenshot 7](doc/screenshots/screen7.png)
+
+![Screenshot 8](doc/screenshots/screen8.png)
+
+![Screenshot 9](doc/screenshots/screen9.png)
+
+![Screenshot 10](doc/screenshots/screen10.png)
