@@ -114,6 +114,11 @@ Don't wait for new toys to arrive. A dedicated AI agent creates a fun, structure
 
 ![Play quest](doc/play-quest.png)
 
+### 6. Integrations
+
+- **Google Calendar**: Schedule Play Quests directly to your calendar with one click.
+- **Google Shopping**: Quick-access links to find recommended toys across retailers.
+
 ---
 
 ## How it was built
