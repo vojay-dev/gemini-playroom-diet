@@ -336,6 +336,16 @@ Building Playroom Diet pushed me to think beyond single-prompt AI demos:
 - **Scaling:** To keep costs near zero, all components are scaled to the minimum. A playroom scan takes a couple of minutes, mainly because the backend and Airflow infrastructure automatically scale to zero and often require a warm-up phase. Depending on how well the project is received, this can be improved by scaling the infrastructure accordingly.
 - **More parenting support:** Toy management is just the beginning. Parenting is an underexplored AI use case, and many features in this area can be added.
 
+### Vision
+
+Every parent feels overwhelmed. The challenges are constant, the decisions endless. Playroom Diet is a step toward a future where AI helps us with the most important job of all, raising our children.
+
+But this is just the beginning.
+
+As a father, I see opportunities everywhere in my daily life. My daughter is learning to write, but she struggles with specific letters, sometimes writes them backwards, sometimes just *wrong*. What if a service like Playroom Diet could analyze a photo of her homework, identify the patterns, and generate playful, research-backed activities to help us work through them together?
+
+The possibilities of Gemini in parenting are endless. And they're worth exploring.
+
 ---
 
 > [!IMPORTANT]
