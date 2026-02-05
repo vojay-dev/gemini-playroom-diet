@@ -1,14 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <!-- Toy block - 3D cube -->
-  <!-- Top face -->
-  <polygon points="16,4 28,10 16,16 4,10" fill="#3498DB"/>
-
-  <!-- Left face -->
-  <polygon points="4,10 16,16 16,28 4,22" fill="#E74C3C"/>
-
-  <!-- Right face -->
-  <polygon points="16,16 28,10 28,22 16,28" fill="#F1C40F"/>
-
-  <!-- Star on top face -->
-  <polygon points="16,7 17.5,10 21,10 18.5,12 19.5,15.5 16,13.5 12.5,15.5 13.5,12 11,10 14.5,10" fill="#FFFFFF"/>
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#a78bfa"/>
+    </linearGradient>
+  </defs>
+  <path d="M16 1 C16 9 9 16 1 16 C9 16 16 23 16 31 C16 23 23 16 31 16 C23 16 16 9 16 1Z" fill="url(#g)"/>
 </svg>
