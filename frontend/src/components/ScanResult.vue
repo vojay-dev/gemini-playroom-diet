@@ -279,7 +279,7 @@ onUnmounted(() => {
     <!-- Results -->
     <div v-else class="w-full max-w-6xl">
       <!-- Header -->
-      <div class="card bg-gradient-to-br from-primary/20 to-secondary/20 backdrop-blur-md border border-white/10 rounded-2xl mb-6">
+      <div class="card bg-gradient-to-br from-primary/20 to-secondary/20 backdrop-blur-md border border-white/10 rounded-2xl mb-6 stagger-in" style="animation-delay: 0ms">
         <div class="card-body text-center">
           <div class="text-5xl mb-2">🗺️</div>
           <h1 class="text-2xl md:text-3xl font-bold" style="font-family: 'Fredoka', sans-serif;">
@@ -302,7 +302,7 @@ onUnmounted(() => {
       </div>
 
       <!-- Tabs -->
-      <div class="grid grid-cols-2 gap-3 mb-6">
+      <div class="grid grid-cols-2 gap-3 mb-6 stagger-in" style="animation-delay: 150ms">
         <button
           @click="activeTab = 'roadmap'"
           :class="[
@@ -333,7 +333,7 @@ onUnmounted(() => {
       </div>
 
       <!-- Grid -->
-      <div v-if="activeTab === 'roadmap'" class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+      <div v-if="activeTab === 'roadmap'" class="grid grid-cols-1 lg:grid-cols-5 gap-6 stagger-in" style="animation-delay: 300ms">
 
         <!-- Roadmap -->
         <div class="lg:col-span-3 space-y-4">
@@ -592,7 +592,7 @@ onUnmounted(() => {
       </div>
 
       <!-- Quest -->
-      <div v-else-if="activeTab === 'quest' && playQuest" class="max-w-2xl mx-auto">
+      <div v-else-if="activeTab === 'quest' && playQuest" class="max-w-2xl mx-auto stagger-in" style="animation-delay: 300ms">
         <div class="card bg-gradient-to-br from-accent/20 to-secondary/20 backdrop-blur-md border border-white/10 rounded-2xl">
           <div class="card-body">
             <div class="flex items-center gap-3 mb-4">
@@ -656,7 +656,7 @@ onUnmounted(() => {
       </div>
 
       <!-- Footer -->
-      <div class="mt-6 mb-12 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-base-300/20 backdrop-blur-sm border border-white/5">
+      <div class="mt-6 mb-12 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-base-300/20 backdrop-blur-sm border border-white/5 stagger-in" style="animation-delay: 450ms">
         <p class="font-mono text-xs opacity-40">Scan ID: {{ scanId }}</p>
         <div class="flex gap-2">
           <button @click="copyLink" class="btn btn-secondary gap-2">
@@ -859,6 +859,22 @@ onUnmounted(() => {
     opacity: 1;
     transform: scale(1) translateY(0);
   }
+}
+
+/* staggered entrance animation */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.stagger-in {
+  animation: fade-in-up 0.5s ease-out both;
 }
 
 /* agent badge glow */

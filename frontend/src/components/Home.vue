@@ -123,34 +123,37 @@ const handleSubmit = async () => {
 
           <!-- Tech stack -->
           <p class="text-xs opacity-50 mb-3">Built with:</p>
-          <div class="flex flex-wrap justify-center gap-3 mb-5">
-            <div class="badge badge-md badge-soft badge-primary gap-1 p-2">
+          <div class="flex flex-wrap justify-center gap-1.5 mb-5">
+            <a href="https://github.com/astronomer/airflow-ai-sdk" target="_blank" class="badge badge-md badge-soft badge-primary gap-1 p-2 tech-badge">
               <span>🧠</span> AI Agents
-            </div>
-            <div class="badge badge-md badge-soft badge-primary gap-1 p-2">
+            </a>
+            <a href="https://ai.google.dev/gemini-api/docs" target="_blank" class="badge badge-md badge-soft badge-primary gap-1 p-2 tech-badge">
               <span>🤖</span> Gemini 3 Flash
-            </div>
-            <div class="badge badge-md badge-soft badge-primary gap-1 p-2">
+            </a>
+            <a href="https://airflow.apache.org/" target="_blank" class="badge badge-md badge-soft badge-primary gap-1 p-2 tech-badge">
               <span>🌀</span> Apache Airflow
-            </div>
-            <div class="badge badge-md badge-soft badge-primary gap-1 p-2">
+            </a>
+            <a href="https://fastapi.tiangolo.com/" target="_blank" class="badge badge-md badge-soft badge-primary gap-1 p-2 tech-badge">
               <span>⚡</span> FastAPI
-            </div>
-            <div class="badge badge-md badge-soft badge-primary gap-1 p-2">
+            </a>
+            <a href="https://vuejs.org/" target="_blank" class="badge badge-md badge-soft badge-primary gap-1 p-2 tech-badge">
               <span>💚</span> Vue.js 3
-            </div>
-            <div class="badge badge-md badge-soft badge-primary gap-1 p-2">
+            </a>
+            <a href="https://tailwindcss.com/" target="_blank" class="badge badge-md badge-soft badge-primary gap-1 p-2 tech-badge">
               <span>🎨</span> Tailwind CSS
-            </div>
-            <div class="badge badge-md badge-soft badge-primary gap-1 p-2">
+            </a>
+            <a href="https://daisyui.com/" target="_blank" class="badge badge-md badge-soft badge-primary gap-1 p-2 tech-badge">
+              <span>🌼</span> daisyUI 5
+            </a>
+            <a href="https://www.postgresql.org/" target="_blank" class="badge badge-md badge-soft badge-primary gap-1 p-2 tech-badge">
               <span>🗄️</span> Postgres
-            </div>
-            <div class="badge badge-md badge-soft badge-primary gap-1 p-2">
+            </a>
+            <a href="https://www.python.org/" target="_blank" class="badge badge-md badge-soft badge-primary gap-1 p-2 tech-badge">
               <span>🐍</span> Python
-            </div>
-            <div class="badge badge-md badge-soft badge-primary gap-1 p-2">
+            </a>
+            <a href="https://www.onetcenter.org/" target="_blank" class="badge badge-md badge-soft badge-primary gap-1 p-2 tech-badge">
               <span>📊</span> O*NET Data
-            </div>
+            </a>
           </div>
 
           <!-- Links -->
@@ -329,3 +332,15 @@ const handleSubmit = async () => {
     </div>
   </div>
 </template>
+
+<style scoped>
+.tech-badge {
+  transition: all 0.3s ease;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.tech-badge:hover {
+  box-shadow: 0 0 6px currentColor, 0 0 12px currentColor;
+}
+</style>
