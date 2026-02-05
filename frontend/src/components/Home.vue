@@ -120,7 +120,7 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <div class="hero min-h-[calc(100vh-68px-40px)] py-8 pb-16 overflow-auto relative">
+  <div class="hero min-h-[calc(100vh-68px-40px)] py-8 pb-16 overflow-auto relative flex flex-col items-center justify-center">
 
     <div class="hero-content flex-col lg:flex-row-reverse lg:items-stretch gap-8 relative z-10">
 
@@ -389,6 +389,17 @@ const handleSubmit = async () => {
         </form>
       </div>
     </div>
+
+    <!-- Gemini Hackathon Badge -->
+    <a
+      href="https://gemini3.devpost.com/"
+      target="_blank"
+      class="gemini-badge inline-flex items-center gap-2 px-4 py-2 rounded-full bg-base-300/30 backdrop-blur-md border border-white/10 hover:border-white/25 transition-all relative z-10 mt-4 mb-8"
+    >
+      <img src="/gemini-color.png" alt="Gemini" class="w-5 h-5 gemini-spin" />
+      <span class="text-xs opacity-60">Built for the</span>
+      <span class="text-xs font-semibold">Gemini 3 Hackathon</span>
+    </a>
   </div>
 </template>
 
@@ -457,5 +468,29 @@ const handleSubmit = async () => {
 
 .tech-badge:hover {
   box-shadow: 0 0 6px currentColor, 0 0 12px currentColor;
+}
+
+.gemini-badge {
+  animation: fade-in-up 0.5s ease-out 1s both;
+}
+
+.gemini-spin {
+  animation: gentle-spin 8s linear infinite;
+}
+
+@keyframes gentle-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 </style>
