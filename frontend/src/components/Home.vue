@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
 import { event as gtagEvent } from 'vue-gtag'
 import { useToast } from '../composables/useToast'
@@ -12,6 +12,26 @@ const file = ref(null)
 const previewUrl = ref(null)
 const isSubmitting = ref(false)
 const isCompressing = ref(false)
+
+// Stick figure that evolves with age
+const figure = computed(() => {
+  const t = (age.value - 1) / 11 // 0 to 1
+  const headR = 9 - t * 3        // 9 → 6
+  const bodyLen = 10 + t * 14     // 10 → 24
+  const legLen = 8 + t * 10       // 8 → 18
+  const armLen = 6 + t * 7        // 6 → 13
+  const armY = 0.3                // arms at 30% down body
+
+  // Build from bottom up within viewBox 0 0 40 70
+  const bottom = 68
+  const legEnd = bottom
+  const bodyEnd = bottom - legLen
+  const bodyStart = bodyEnd - bodyLen
+  const headCY = bodyStart - headR
+  const armAttach = bodyStart + bodyLen * armY
+
+  return { headR, bodyStart, bodyEnd, legEnd, armLen, armAttach, headCY }
+})
 
 const handleFileChange = async (event) => {
   const selected = event.target.files[0]
@@ -213,21 +233,60 @@ const handleSubmit = async () => {
                 {{ age }} Years
               </span>
             </label>
-            <div class="w-full">
-            <input
-              type="range"
-              min="1"
-              max="12"
-              v-model="age"
-              class="range range-primary w-full"
-            />
-            <div class="w-full flex justify-between text-xs px-2 mt-2 opacity-50">
-              <span>1</span>
-              <span>3</span>
-              <span>6</span>
-              <span>9</span>
-              <span>12</span>
-            </div>
+            <div class="flex items-end gap-3">
+              <div class="flex-1">
+                <input
+                  type="range"
+                  min="1"
+                  max="12"
+                  v-model="age"
+                  class="range range-primary w-full"
+                />
+                <div class="w-full flex justify-between text-xs px-2 mt-2 opacity-50">
+                  <span>1</span>
+                  <span>3</span>
+                  <span>6</span>
+                  <span>9</span>
+                  <span>12</span>
+                </div>
+              </div>
+              <svg viewBox="0 0 40 70" class="w-8 h-14 shrink-0 mb-1 figure-transition">
+                <!-- head -->
+                <circle
+                  cx="20" :cy="figure.headCY" :r="figure.headR"
+                  fill="none" class="stroke-primary" stroke-width="2.5" stroke-linecap="round" opacity="0.7"
+                />
+                <!-- smile -->
+                <path
+                  :d="`M ${17} ${figure.headCY + 2} Q 20 ${figure.headCY + 5} ${23} ${figure.headCY + 2}`"
+                  fill="none" class="stroke-primary" stroke-width="2" stroke-linecap="round" opacity="0.6"
+                />
+                <!-- body -->
+                <line
+                  x1="20" :y1="figure.bodyStart" x2="20" :y2="figure.bodyEnd"
+                  class="stroke-primary" stroke-width="2.5" stroke-linecap="round" opacity="0.7"
+                />
+                <!-- left arm -->
+                <line
+                  x1="20" :y1="figure.armAttach" :x2="20 - figure.armLen" :y2="figure.armAttach + figure.armLen * 0.7"
+                  class="stroke-primary" stroke-width="2.5" stroke-linecap="round" opacity="0.7"
+                />
+                <!-- right arm -->
+                <line
+                  x1="20" :y1="figure.armAttach" :x2="20 + figure.armLen" :y2="figure.armAttach + figure.armLen * 0.7"
+                  class="stroke-primary" stroke-width="2.5" stroke-linecap="round" opacity="0.7"
+                />
+                <!-- left leg -->
+                <line
+                  x1="20" :y1="figure.bodyEnd" :x2="13" :y2="figure.legEnd"
+                  class="stroke-primary" stroke-width="2.5" stroke-linecap="round" opacity="0.7"
+                />
+                <!-- right leg -->
+                <line
+                  x1="20" :y1="figure.bodyEnd" :x2="27" :y2="figure.legEnd"
+                  class="stroke-primary" stroke-width="2.5" stroke-linecap="round" opacity="0.7"
+                />
+              </svg>
             </div>
           </div>
 
@@ -338,6 +397,12 @@ const handleSubmit = async () => {
   transition: all 0.3s ease;
   cursor: pointer;
   text-decoration: none;
+}
+
+.figure-transition circle,
+.figure-transition line,
+.figure-transition path {
+  transition: all 0.4s ease-out;
 }
 
 .tech-badge:hover {
