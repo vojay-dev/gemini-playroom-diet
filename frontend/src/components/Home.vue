@@ -128,7 +128,7 @@ const handleSubmit = async () => {
       <div class="bg-base-300/30 backdrop-blur-md border border-white/10 rounded-2xl text-center lg:text-left w-full max-w-md flex flex-col justify-start overflow-hidden">
         <!-- Header -->
         <div class="bg-gradient-to-r from-secondary/20 to-primary/20 px-8 py-5 border-b border-white/10">
-          <h1 class="text-4xl font-semibold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent" style="font-family: 'Fredoka', sans-serif;">
+          <h1 class="text-4xl font-semibold bg-clip-text text-transparent title-shimmer" style="font-family: 'Fredoka', sans-serif;">
             Playroom Diet
           </h1>
           <p class="text-sm opacity-60 mt-1">Because play needs balance, just like a diet</p>
@@ -144,34 +144,34 @@ const handleSubmit = async () => {
           <!-- Tech stack -->
           <p class="text-xs opacity-50 mb-3">Built with:</p>
           <div class="flex flex-wrap justify-center gap-1.5 mb-5">
-            <a href="https://github.com/astronomer/airflow-ai-sdk" target="_blank" class="badge badge-md badge-soft badge-primary gap-1 p-2 tech-badge">
+            <a href="https://github.com/astronomer/airflow-ai-sdk" target="_blank" class="badge badge-md badge-soft badge-primary gap-1 p-2 tech-badge pill-in" style="animation-delay: 0.1s">
               <span>🧠</span> AI Agents
             </a>
-            <a href="https://ai.google.dev/gemini-api/docs" target="_blank" class="badge badge-md badge-soft badge-primary gap-1 p-2 tech-badge">
+            <a href="https://ai.google.dev/gemini-api/docs" target="_blank" class="badge badge-md badge-soft badge-primary gap-1 p-2 tech-badge pill-in" style="animation-delay: 0.17s">
               <span>🤖</span> Gemini 3 Flash
             </a>
-            <a href="https://airflow.apache.org/" target="_blank" class="badge badge-md badge-soft badge-primary gap-1 p-2 tech-badge">
+            <a href="https://airflow.apache.org/" target="_blank" class="badge badge-md badge-soft badge-primary gap-1 p-2 tech-badge pill-in" style="animation-delay: 0.24s">
               <span>🌀</span> Apache Airflow
             </a>
-            <a href="https://fastapi.tiangolo.com/" target="_blank" class="badge badge-md badge-soft badge-primary gap-1 p-2 tech-badge">
+            <a href="https://fastapi.tiangolo.com/" target="_blank" class="badge badge-md badge-soft badge-primary gap-1 p-2 tech-badge pill-in" style="animation-delay: 0.31s">
               <span>⚡</span> FastAPI
             </a>
-            <a href="https://vuejs.org/" target="_blank" class="badge badge-md badge-soft badge-primary gap-1 p-2 tech-badge">
+            <a href="https://vuejs.org/" target="_blank" class="badge badge-md badge-soft badge-primary gap-1 p-2 tech-badge pill-in" style="animation-delay: 0.38s">
               <span>💚</span> Vue.js 3
             </a>
-            <a href="https://tailwindcss.com/" target="_blank" class="badge badge-md badge-soft badge-primary gap-1 p-2 tech-badge">
+            <a href="https://tailwindcss.com/" target="_blank" class="badge badge-md badge-soft badge-primary gap-1 p-2 tech-badge pill-in" style="animation-delay: 0.45s">
               <span>🎨</span> Tailwind CSS
             </a>
-            <a href="https://daisyui.com/" target="_blank" class="badge badge-md badge-soft badge-primary gap-1 p-2 tech-badge">
+            <a href="https://daisyui.com/" target="_blank" class="badge badge-md badge-soft badge-primary gap-1 p-2 tech-badge pill-in" style="animation-delay: 0.52s">
               <span>🌼</span> daisyUI 5
             </a>
-            <a href="https://www.postgresql.org/" target="_blank" class="badge badge-md badge-soft badge-primary gap-1 p-2 tech-badge">
+            <a href="https://www.postgresql.org/" target="_blank" class="badge badge-md badge-soft badge-primary gap-1 p-2 tech-badge pill-in" style="animation-delay: 0.59s">
               <span>🗄️</span> Postgres
             </a>
-            <a href="https://www.python.org/" target="_blank" class="badge badge-md badge-soft badge-primary gap-1 p-2 tech-badge">
+            <a href="https://www.python.org/" target="_blank" class="badge badge-md badge-soft badge-primary gap-1 p-2 tech-badge pill-in" style="animation-delay: 0.66s">
               <span>🐍</span> Python
             </a>
-            <a href="https://www.onetcenter.org/" target="_blank" class="badge badge-md badge-soft badge-primary gap-1 p-2 tech-badge">
+            <a href="https://www.onetcenter.org/" target="_blank" class="badge badge-md badge-soft badge-primary gap-1 p-2 tech-badge pill-in" style="animation-delay: 0.73s">
               <span>📊</span> O*NET Data
             </a>
           </div>
@@ -215,7 +215,7 @@ const handleSubmit = async () => {
             </div>
             <div>
               <h2 class="font-bold text-lg">Start Your Analysis</h2>
-              <p class="text-xs opacity-60">Just 2 steps to optimize your playroom</p>
+              <p class="text-xs opacity-60">2 steps to boost your child's development</p>
             </div>
           </div>
         </div>
@@ -250,7 +250,7 @@ const handleSubmit = async () => {
                   <span>12</span>
                 </div>
               </div>
-              <svg viewBox="0 0 40 70" class="w-8 h-14 shrink-0 mb-1 figure-transition">
+              <svg viewBox="0 0 40 70" class="w-8 h-14 shrink-0 mb-1 figure-transition figure-entrance">
                 <!-- head -->
                 <circle
                   cx="20" :cy="figure.headCY" :r="figure.headR"
@@ -403,6 +403,56 @@ const handleSubmit = async () => {
 .figure-transition line,
 .figure-transition path {
   transition: all 0.4s ease-out;
+}
+
+.figure-entrance {
+  animation: figure-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s both;
+}
+
+@keyframes figure-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.3) rotate(-15deg);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-3px) scale(1.1) rotate(3deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotate(0deg);
+  }
+}
+
+.title-shimmer {
+  background-image: linear-gradient(
+    90deg,
+    var(--color-primary) 0%,
+    var(--color-secondary) 50%,
+    var(--color-primary) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 8s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.pill-in {
+  animation: pill-drop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes pill-drop {
+  0% {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .tech-badge:hover {
