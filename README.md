@@ -217,33 +217,36 @@ Each scan is moving through 3 distinct states. The backend creates each scan wit
 
 The [Airflow AI SDK](https://github.com/astronomer/airflow-ai-sdk) is an open-source Python library, that facilitates the integration and orchestration of LLMs and AI agents directly within Apache Airflow pipelines. It provides decorator-based tasks to seamlessly incorporate AI functionality into traditional data and machine learning workflows. It is based on [PydanticAI](https://ai.pydantic.dev/) so that many of the features can be used.
 
-The model used for all agents is `gemini-3-flash-preview`.
+The pipeline uses two models: `gemini-3-pro-preview` for the analysis agent (complex reasoning with tool use) and `gemini-3-flash-preview` for the remaining agents (vision, safety, play quest). Each agent is configured with per-task `thinking_level` and the vision agent uses `media_resolution: HIGH` for detailed image analysis.
 
-For Playroom Diet, all agents are defined with a model, a strict Pydantic output type, a system prompt based on the role in the multi-agent system, and some are provided with tool functions.
+For Playroom Diet, all agents are defined with a model, a strict Pydantic output type, a system prompt based on the role in the multi-agent system, `GoogleModelSettings` for model-specific tuning, and some are provided with tool functions.
 
 **Example:**
 
 ```python
 @task.agent(
     agent=Agent(
-        model="gemini-3-flash-preview",
+        model="gemini-3-pro-preview",
         output_type=AnalysisResult,
         system_prompt="...",
-        tools=[get_careers_for_skill]
+        tools=[get_careers_for_skill],
+        model_settings=GoogleModelSettings(
+            google_thinking_config={"thinking_level": "high"}
+        )
     )
 )
 ```
 
 🤖 **Agent 1:** _Vision Agent_ `analyze_image`
 
-- **Model**: Gemini 3 Flash (vision)
+- **Model**: Gemini 3 Flash (`thinking_level: low`, `media_resolution: HIGH`)
 - **Input**: Playroom photo from the image storage
 - **Output**: `ToyInventory` with bounding boxes
 - **Purpose**: Extract every visible toy with normalized coordinates (0-1 range)
 
 🤖 **Agent 2:** _Room Analyze Agent_ `analyze_playroom`
 
-- **Model**: Gemini 3 Flash
+- **Model**: Gemini 3 Pro (`thinking_level: high`)
 - **Input**: Toy inventory + child's age
 - **Tools**: `get_careers_for_skill` (database lookup)
 - **Output**: `AnalysisResult` with skill scores and 3-item roadmap
@@ -274,7 +277,7 @@ $$;
 
 🤖 **Agent 3:** _CPSC Child Safety Agent_ `safety_check`
 
-- **Model**: Gemini 3 Flash
+- **Model**: Gemini 3 Flash (`thinking_level: low`)
 - **Input**: Development roadmap + child's age
 - **Tools**: `duckduckgo_search_tool` (to search current data about products)
 - **Output**: `ToyRecommendation` with safety decisions
@@ -282,7 +285,7 @@ $$;
 
 🤖 **Agent 4:** _Play Quest Agent_ `generate_play_quest`
 
-- **Model**: Gemini 3 Flash
+- **Model**: Gemini 3 Flash (`thinking_level: medium`)
 - **Input**: Toy inventory + child's age
 - **Output**: `PlayQuest` activity details
 - **Purpose**: Create an immediate play activity using existing toys
