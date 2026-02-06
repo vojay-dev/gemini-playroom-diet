@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
 import { event as gtagEvent } from 'vue-gtag'
 import { useToast } from '../composables/useToast'
@@ -13,7 +13,33 @@ const previewUrl = ref(null)
 const isSubmitting = ref(false)
 const isCompressing = ref(false)
 
-// Stick figure that evolves with age
+// Info slides
+const slides = [
+  'Turn toy chaos into a <span class="font-bold text-primary">science-backed</span> growth plan. 4 AI agents map your toys to the O*NET framework, forecast future career skills, and create a 6-month roadmap.',
+  'Upload a photo of your playroom and get a <span class="font-bold text-primary">personalized skill radar</span> showing your child\'s development across 6 key areas.',
+  'Each recommendation is <span class="font-bold text-primary">safety-validated</span> against CPSC guidelines for your child\'s age. Unsafe suggestions are automatically replaced.',
+  'Get a <span class="font-bold text-primary">Play Quest</span>! A fun, structured activity using toys you already own, designed to target a specific development skill.',
+]
+const currentSlide = ref(0)
+const SLIDE_DURATION = 6000
+let slideTimer = null
+
+const goToSlide = (i) => {
+  currentSlide.value = i
+  resetTimer()
+}
+
+const resetTimer = () => {
+  clearInterval(slideTimer)
+  slideTimer = setInterval(() => {
+    currentSlide.value = (currentSlide.value + 1) % slides.length
+  }, SLIDE_DURATION)
+}
+
+onMounted(() => resetTimer())
+onUnmounted(() => clearInterval(slideTimer))
+
+// Stick figure
 const figure = computed(() => {
   const t = (age.value - 1) / 11 // 0 to 1
   const headR = 9 - t * 3        // 9 → 6
@@ -40,7 +66,7 @@ const handleFileChange = async (event) => {
   // Show preview immediately with original
   previewUrl.value = URL.createObjectURL(selected)
 
-  // Compress if needed (storage has file size limitation)
+  // Compress if needed
   isCompressing.value = true
   try {
     const compressed = await compressImage(selected)
@@ -135,11 +161,28 @@ const handleSubmit = async () => {
         </div>
 
         <div class="p-6">
-          <p class="text-base mb-6">
-            Turn toy chaos into a
-            <span class="font-bold text-primary">science-backed</span>
-            growth plan. 4 AI agents map your toys to the O*NET framework, forecast future career skills, and create a 6-month roadmap.
-          </p>
+          <div class="mb-5">
+            <div class="overflow-hidden relative min-h-24">
+              <transition name="slide-fade" mode="out-in">
+                <p class="text-base" :key="currentSlide" v-html="slides[currentSlide]"></p>
+              </transition>
+            </div>
+            <div class="flex gap-1 mt-3">
+              <button
+                v-for="(_, i) in slides"
+                :key="i"
+                @click="goToSlide(i)"
+                class="h-1 flex-1 rounded-full bg-white/10 overflow-hidden cursor-pointer"
+              >
+                <div
+                  :class="[
+                    'h-full rounded-full',
+                    currentSlide === i ? 'slide-progress bg-primary' : i < currentSlide ? 'w-full bg-primary/40' : 'w-0'
+                  ]"
+                />
+              </button>
+            </div>
+          </div>
 
           <!-- Tech stack -->
           <p class="text-xs opacity-50 mb-3">Built with:</p>
@@ -464,6 +507,31 @@ const handleSubmit = async () => {
     opacity: 1;
     transform: translateY(0) scale(1);
   }
+}
+
+.slide-fade-enter-active {
+  transition: all 0.4s ease-out;
+}
+.slide-fade-leave-active {
+  transition: all 0.2s ease-in;
+}
+.slide-fade-enter-from {
+  opacity: 0;
+  filter: blur(4px);
+  transform: translateY(6px);
+}
+.slide-fade-leave-to {
+  opacity: 0;
+  filter: blur(2px);
+}
+
+.slide-progress {
+  animation: progress-fill 6s linear;
+}
+
+@keyframes progress-fill {
+  from { width: 0%; }
+  to { width: 100%; }
 }
 
 .tech-badge:hover {
