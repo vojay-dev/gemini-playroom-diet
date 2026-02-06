@@ -279,61 +279,64 @@ onUnmounted(() => {
     <!-- Results -->
     <div v-else class="w-full max-w-6xl">
       <!-- Header -->
-      <div class="card bg-gradient-to-br from-primary/20 to-secondary/20 backdrop-blur-md border border-white/10 rounded-2xl mb-6 stagger-in" style="animation-delay: 0ms">
-        <div class="card-body text-center">
-          <div class="text-5xl mb-2">🗺️</div>
-          <h1 class="text-2xl md:text-3xl font-bold" style="font-family: 'Fredoka', sans-serif;">
-            Your Development Roadmap
-          </h1>
-          <p class="opacity-70 mt-2">
-            A personalized 6-month plan for your
-            <span v-if="childAge" class="font-semibold text-primary">{{ childAge }}-year-old</span>
-            <span v-else>child</span>'s growth
-          </p>
-          <div v-if="isCached" class="tooltip tooltip-bottom mt-2" data-tip="Results loaded from cache. The cache is based on the image hash. In case of a cache hit, the child's age from the cached run is used. It is automatically cleaned after a few days.">
-            <span class="badge badge-outline badge-success gap-1 cursor-help">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              Cached result
-            </span>
+      <div class="result-header relative z-10 rounded-2xl mb-6 p-[1px] stagger-in overflow-visible" style="animation-delay: 0ms">
+        <div class="absolute inset-0 rounded-2xl rotating-border"></div>
+        <div class="relative card bg-base-300/80 rounded-2xl overflow-visible">
+          <div class="card-body text-center py-5">
+            <h1 class="text-2xl md:text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent" style="font-family: 'Fredoka', sans-serif;">
+              Your Development Roadmap
+            </h1>
+            <p class="opacity-60 text-sm mt-1">
+              A personalized 6-month plan for your
+              <span v-if="childAge" class="font-semibold text-primary">{{ childAge }}-year-old</span>
+              <span v-else>child</span>'s growth
+            </p>
+            <div v-if="isCached" class="tooltip tooltip-bottom mt-1" data-tip="Results loaded from cache. The cache is based on the image hash. In case of a cache hit, the child's age from the cached run is used. It is automatically cleaned after a few days.">
+              <span class="badge badge-ghost gap-1 cursor-help text-xs opacity-40">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Cached result
+              </span>
+            </div>
           </div>
         </div>
       </div>
 
       <!-- Tabs -->
-      <div class="grid grid-cols-2 gap-3 mb-6 stagger-in" style="animation-delay: 150ms">
-        <button
-          @click="activeTab = 'roadmap'"
-          :class="[
-            'flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all',
-            activeTab === 'roadmap'
-              ? 'bg-primary/30 border-primary text-primary'
-              : 'bg-base-300/50 border-white/10 hover:border-primary/50'
-          ]"
-        >
-          <span class="text-2xl">🗺️</span>
-          <span class="font-semibold">6-Month Roadmap</span>
-          <span class="text-xs opacity-60">New toys to get</span>
-        </button>
-        <button
-          v-if="playQuest"
-          @click="activeTab = 'quest'"
-          :class="[
-            'flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all',
-            activeTab === 'quest'
-              ? 'bg-accent/30 border-accent text-accent'
-              : 'bg-base-300/50 border-white/10 hover:border-accent/50'
-          ]"
-        >
-          <span class="text-2xl">🎮</span>
-          <span class="font-semibold">Play Quest</span>
-          <span class="text-xs opacity-60">Play with what you have</span>
-        </button>
+      <div class="relative p-1 rounded-2xl bg-base-300/30 backdrop-blur-md border border-white/10 mb-6 stagger-in" style="animation-delay: 150ms">
+        <div
+          class="tab-indicator absolute top-1 bottom-1 rounded-xl transition-all duration-300 ease-out"
+          :class="activeTab === 'roadmap' ? 'bg-primary/20 shadow-[0_0_12px_var(--color-primary)]' : 'bg-accent/20 shadow-[0_0_12px_var(--color-accent)]'"
+          :style="{ left: activeTab === 'roadmap' ? '4px' : playQuest ? '50%' : '4px', width: playQuest ? 'calc(50% - 4px)' : 'calc(100% - 8px)' }"
+        />
+        <div class="relative grid" :class="playQuest ? 'grid-cols-2' : 'grid-cols-1'">
+          <button
+            @click="activeTab = 'roadmap'"
+            :class="[
+              'flex items-center justify-center gap-2 py-3 px-4 rounded-xl transition-all duration-300 z-10 cursor-pointer',
+              activeTab === 'roadmap' ? 'text-primary' : 'text-white/40 hover:text-white/70'
+            ]"
+          >
+            <span>🗺️</span>
+            <span class="font-semibold text-sm">6-Month Roadmap</span>
+          </button>
+          <button
+            v-if="playQuest"
+            @click="activeTab = 'quest'"
+            :class="[
+              'flex items-center justify-center gap-2 py-3 px-4 rounded-xl transition-all duration-300 z-10 cursor-pointer',
+              activeTab === 'quest' ? 'text-accent' : 'text-white/40 hover:text-white/70'
+            ]"
+          >
+            <span>🎮</span>
+            <span class="font-semibold text-sm">Play Quest</span>
+          </button>
+        </div>
       </div>
 
       <!-- Grid -->
-      <div v-if="activeTab === 'roadmap'" class="grid grid-cols-1 lg:grid-cols-5 gap-6 stagger-in" style="animation-delay: 300ms">
+      <div v-if="activeTab === 'roadmap'" class="grid grid-cols-1 lg:grid-cols-5 gap-6">
 
         <!-- Roadmap -->
         <div class="lg:col-span-3 space-y-4">
@@ -592,7 +595,7 @@ onUnmounted(() => {
       </div>
 
       <!-- Quest -->
-      <div v-else-if="activeTab === 'quest' && playQuest" class="max-w-2xl mx-auto stagger-in" style="animation-delay: 300ms">
+      <div v-else-if="activeTab === 'quest' && playQuest" class="max-w-2xl mx-auto">
         <div class="card bg-gradient-to-br from-accent/20 to-secondary/20 backdrop-blur-md border border-white/10 rounded-2xl">
           <div class="card-body">
             <div class="flex items-center gap-3 mb-4">
@@ -656,7 +659,7 @@ onUnmounted(() => {
       </div>
 
       <!-- Footer -->
-      <div class="mt-6 mb-12 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-base-300/20 backdrop-blur-sm border border-white/5 stagger-in" style="animation-delay: 450ms">
+      <div class="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-base-300/20 backdrop-blur-sm border border-white/5">
         <p class="font-mono text-xs opacity-40">Scan ID: {{ scanId }}</p>
         <div class="flex gap-2">
           <button @click="copyLink" class="btn btn-secondary gap-2">
@@ -676,6 +679,19 @@ onUnmounted(() => {
             Scan Another Room
           </RouterLink>
         </div>
+      </div>
+
+      <!-- Gemini Badge -->
+      <div class="flex justify-center mt-6 mb-16">
+        <a
+          href="https://gemini3.devpost.com/"
+          target="_blank"
+          class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-base-300/30 backdrop-blur-md border border-white/10 hover:border-white/25 transition-all"
+        >
+          <img src="/gemini-color.png" alt="Gemini" class="w-5 h-5 gemini-spin" />
+          <span class="text-xs opacity-60">Powered by</span>
+          <span class="text-xs font-semibold">Gemini 3</span>
+        </a>
       </div>
 
       <!-- Modal -->
@@ -861,6 +877,44 @@ onUnmounted(() => {
   }
 }
 
+/* result header */
+.rotating-border {
+  background: conic-gradient(
+    from var(--border-angle, 0deg),
+    var(--color-primary),
+    var(--color-secondary),
+    var(--color-accent),
+    var(--color-primary)
+  );
+  animation: rotate-border 4s linear infinite;
+  opacity: 0.5;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  padding: 1.5px;
+}
+
+@keyframes rotate-border {
+  to { --border-angle: 360deg; }
+}
+
+@property --border-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+
+.gemini-spin {
+  animation: gemini-spin 8s linear infinite;
+}
+
+@keyframes gemini-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 /* staggered entrance animation */
 @keyframes fade-in-up {
   from {
@@ -876,6 +930,7 @@ onUnmounted(() => {
 .stagger-in {
   animation: fade-in-up 0.5s ease-out both;
 }
+
 
 /* agent badge glow */
 .shadow-glow {
