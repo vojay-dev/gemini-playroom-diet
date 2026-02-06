@@ -7,6 +7,7 @@ from airflow_ai_sdk import BaseModel
 import httpx
 from supabase import create_client
 from pydantic_ai import BinaryContent, Agent
+from pydantic_ai.models.google import GoogleModelSettings
 from pydantic_ai.common_tools.duckduckgo import duckduckgo_search_tool
 from pendulum import duration
 
@@ -135,7 +136,11 @@ def process_scans():
 
                 You can define your own categories and play modes based on the toys you see.
                 If the image provided is not a playroom or no toys are visible, respond with an empty "items" list.
-            """
+            """,
+            model_settings=GoogleModelSettings(
+                google_video_resolution="MEDIA_RESOLUTION_HIGH",
+                google_thinking_config={"thinking_level": "low"}
+            )
         ),
         max_active_tis_per_dag=2
     )
@@ -173,7 +178,10 @@ def process_scans():
                 - setup: One paragraph on how to prepare the activity
                 - instructions: 3-5 clear steps for the activity
                 - parent_tip: One sentence on how to make it more engaging or educational
-            """
+            """,
+            model_settings=GoogleModelSettings(
+                google_thinking_config={"thinking_level": "medium"}
+            )
         ),
         max_active_tis_per_dag=2
     )
@@ -228,7 +236,10 @@ def process_scans():
                 - Use the `get_careers_for_skill` tool to mention 1-2 future professions that rely on this skill
                 - Add a career forecasting to the reasoning of the roadmap items, based on the O*NET data
             """,
-            tools=[get_careers_for_skill]
+            tools=[get_careers_for_skill],
+            model_settings=GoogleModelSettings(
+                google_thinking_config={"thinking_level": "high"}
+            )
         ),
         max_active_tis_per_dag=2
     )
@@ -267,7 +278,10 @@ def process_scans():
                 - Decision must be "APPROVED" or "SUBSTITUTED".
                 - Provide a clear 'safety_context' explaining your decision for each toy.
             """,
-            tools=[duckduckgo_search_tool()]
+            tools=[duckduckgo_search_tool()],
+            model_settings=GoogleModelSettings(
+                google_thinking_config={"thinking_level": "low"}
+            )
         ),
         max_active_tis_per_dag=2
     )

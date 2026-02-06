@@ -32,6 +32,22 @@ This project demonstrates a **multi-agent AI pipeline** using Gemini 3 and Apach
 
 ---
 
+## Gemini 3 integration
+
+Playroom Diet is built entirely on [**Gemini 3 Flash**](https://deepmind.google/models/gemini/flash/) (`gemini-3-flash-preview`), powering all four AI agents in the pipeline.
+
+**Vision and multimodal understanding** is the entry point: the first agent receives raw playroom photographs and identifies every visible toy, including bounding box coordinates for visual feedback. Gemini 3 Flash's [state-of-the-art vision capabilities](https://blog.google/products/gemini/gemini-3-flash/) make this reliable even with cluttered, real-world scenes.
+
+**Structured output** ensures every agent returns data conforming to strict Pydantic schemas, skill scores, roadmap items, safety decisions, making the results directly usable by the frontend without any post-processing.
+
+**Function calling** enables agents to interact with external systems in real time. The analysis agent calls a custom tool that queries an O*NET database to [map toy-based skills to professional careers](https://www.onetcenter.org/). The safety agent uses a web search tool to validate toy recommendations against current [CPSC guidelines](https://www.cpsc.gov/).
+
+**Dynamic thinking** is tuned per agent using Gemini 3's [`thinking_level`](https://ai.google.dev/gemini-api/docs/thinking) parameter. The vision agent runs at `low` for fast object detection, the Play Quest agent at `medium` for creative generation, and the analysis agent at `high` for deep multi-step reasoning with tool use. The vision agent also uses [`media_resolution: HIGH`](https://ai.google.dev/gemini-api/docs/media-resolution) for detailed image analysis of cluttered playroom scenes.
+
+**Advanced reasoning** ties it all together: agents perform multi-step analysis, scoring six developmental categories, identifying gaps, prioritizing recommendations by timeframe, and synthesizing scientific reasoning, all in a single inference call. Gemini 3 Flash delivers this at [3x the speed of its predecessor](https://www.vellum.ai/blog/google-gemini-3-benchmarks) while using 30% fewer tokens.
+
+---
+
 ## Potential impact
 
 **Parenting is arguably the most important job in the world, yet it is one of the few fields that has remained largely untouched by advanced AI.**
