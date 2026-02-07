@@ -9,7 +9,12 @@ const isNightTheme = ref(true)
 const scansToday = ref(null)
 const dailyLimit = ref(20)
 const dropdownRef = ref(null)
+const dotsContainer = ref(null)
 let limitsInterval = null
+let dotsAnimationId = null
+let dotsData = []
+let dotsTimeouts = []
+let resizeTimer = null
 
 const closeMenu = () => {
   // Blur the active element to close the dropdown
@@ -39,6 +44,64 @@ const toggleTheme = () => {
   localStorage.setItem('theme', newTheme)
 }
 
+const dotColors = ['#f1c40f', '#e91e63', '#00bcd4', '#2ecc71', '#e67e22', '#9b59b6']
+
+function initDots() {
+  const container = dotsContainer.value
+  if (!container) return
+  clearDots()
+
+  // Scale grid to screen size — roughly 1 dot per 120×120px area
+  const cols = Math.max(3, Math.floor(window.innerWidth / 160))
+  const rows = Math.max(2, Math.floor(window.innerHeight / 160))
+
+  for (let i = 0; i < cols * rows; i++) {
+    const el = document.createElement('div')
+    const color = dotColors[Math.floor(Math.random() * dotColors.length)]
+    const size = 3 + Math.random() * 3
+    const topOffset = 3
+el.style.cssText = `position:absolute;border-radius:50%;pointer-events:none;opacity:0.5;width:${size}px;height:${size}px;left:${((i % cols) + 0.5) / cols * 100}%;top:${topOffset + (Math.floor(i / cols) + 0.5) / rows * (100 - topOffset)}%;background-color:${color}`
+    container.appendChild(el)
+
+    const dot = { el, color, baseSize: size, intensity: 0, target: 0 }
+    dotsData.push(dot)
+
+    function scheduleGlow() {
+      const t1 = setTimeout(() => {
+        dot.target = 1
+        const t2 = setTimeout(() => {
+          dot.target = 0
+          scheduleGlow()
+        }, 1500 + Math.random() * 2500)
+        dotsTimeouts.push(t2)
+      }, 3000 + Math.random() * 10000)
+      dotsTimeouts.push(t1)
+    }
+    scheduleGlow()
+  }
+}
+
+function clearDots() {
+  dotsTimeouts.forEach(t => clearTimeout(t))
+  dotsTimeouts = []
+  dotsData = []
+  if (dotsContainer.value) dotsContainer.value.innerHTML = ''
+}
+
+function animateDots() {
+  dotsAnimationId = requestAnimationFrame(animateDots)
+  for (let i = 0; i < dotsData.length; i++) {
+    const dot = dotsData[i]
+    dot.intensity += (dot.target - dot.intensity) * 0.04
+    const glow = dot.intensity
+    const sz = dot.baseSize * (1 + glow * 2)
+    dot.el.style.width = sz + 'px'
+    dot.el.style.height = sz + 'px'
+    dot.el.style.opacity = 0.5 + glow * 0.5
+    dot.el.style.boxShadow = glow > 0.05 ? `0 0 ${glow * 20}px ${glow * 8}px ${dot.color}` : 'none'
+  }
+}
+
 onMounted(() => {
   const savedTheme = localStorage.getItem('theme')
   if (savedTheme === 'dracula') {
@@ -48,16 +111,39 @@ onMounted(() => {
 
   fetchLimits()
   limitsInterval = setInterval(fetchLimits, 30000)
+
+  initDots()
+  animateDots()
+
+  window.addEventListener('resize', onResize)
 })
+
+function onResize() {
+  clearTimeout(resizeTimer)
+  resizeTimer = setTimeout(() => {
+    const container = dotsContainer.value
+    if (!container) return
+    container.style.opacity = '0'
+    setTimeout(() => {
+      initDots()
+      container.style.opacity = '1'
+    }, 400)
+  }, 300)
+}
 
 onUnmounted(() => {
   if (limitsInterval) clearInterval(limitsInterval)
+  if (dotsAnimationId) cancelAnimationFrame(dotsAnimationId)
+  clearTimeout(resizeTimer)
+  window.removeEventListener('resize', onResize)
+  clearDots()
 })
 </script>
 
 <template>
   <!-- Background -->
   <div class="playroom-wall fixed inset-0 z-0"></div>
+  <div ref="dotsContainer" class="fixed inset-0 z-0 pointer-events-none" style="transition: opacity 0.4s ease"></div>
 
   <!-- Playroom background -->
   <PlayroomScene class="!fixed inset-0 z-[1] pointer-events-none" />
@@ -191,39 +277,5 @@ onUnmounted(() => {
 .playroom-wall {
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #1a1a2e 100%);
   background-attachment: fixed;
-}
-
-.playroom-wall::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image:
-    /* Yellow stars */
-    radial-gradient(circle at 10% 20%, #f1c40f 3px, transparent 3px),
-    radial-gradient(circle at 85% 15%, #f1c40f 2px, transparent 2px),
-    radial-gradient(circle at 45% 80%, #f1c40f 2.5px, transparent 2.5px),
-    radial-gradient(circle at 70% 60%, #f1c40f 2px, transparent 2px),
-    /* Pink circles */
-    radial-gradient(circle at 20% 70%, #e91e63 4px, transparent 4px),
-    radial-gradient(circle at 90% 45%, #e91e63 3px, transparent 3px),
-    radial-gradient(circle at 55% 25%, #e91e63 2.5px, transparent 2.5px),
-    /* Cyan dots */
-    radial-gradient(circle at 30% 40%, #00bcd4 3px, transparent 3px),
-    radial-gradient(circle at 75% 85%, #00bcd4 2.5px, transparent 2.5px),
-    radial-gradient(circle at 15% 90%, #00bcd4 2px, transparent 2px),
-    /* Green dots */
-    radial-gradient(circle at 60% 50%, #2ecc71 3px, transparent 3px),
-    radial-gradient(circle at 5% 55%, #2ecc71 2px, transparent 2px),
-    radial-gradient(circle at 95% 75%, #2ecc71 2.5px, transparent 2.5px),
-    /* Orange dots */
-    radial-gradient(circle at 40% 10%, #e67e22 2.5px, transparent 2.5px),
-    radial-gradient(circle at 80% 30%, #e67e22 3px, transparent 3px),
-    radial-gradient(circle at 25% 95%, #e67e22 2px, transparent 2px),
-    /* Purple dots */
-    radial-gradient(circle at 50% 65%, #9b59b6 2.5px, transparent 2.5px),
-    radial-gradient(circle at 65% 5%, #9b59b6 2px, transparent 2px),
-    radial-gradient(circle at 35% 55%, #9b59b6 3px, transparent 3px);
-  background-size: 400px 400px;
-  opacity: 0.6;
 }
 </style>

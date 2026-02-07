@@ -1,15 +1,10 @@
 import { createWebHistory, createRouter } from 'vue-router'
 
-import Home from './components/Home.vue'
-import About from './components/About.vue'
-import ScanResult from './components/ScanResult.vue'
-import SystemOverview from './components/SystemOverview.vue'
-
 const routes = [
-  { path: '/', component: Home },
-  { path: '/about', component: About },
-  { path: '/scan/:id', component: ScanResult },
-  { path: '/system', component: SystemOverview },
+  { path: '/', component: () => import('./components/Home.vue') },
+  { path: '/about', component: () => import('./components/About.vue') },
+  { path: '/scan/:id', component: () => import('./components/ScanResult.vue') },
+  { path: '/system', component: () => import('./components/SystemOverview.vue') },
 ]
 
 export const router = createRouter({
