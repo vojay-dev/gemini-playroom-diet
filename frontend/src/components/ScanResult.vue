@@ -48,6 +48,42 @@ const playQuest = computed(() => result.value?.play_quest || null)
 const activeTab = ref('roadmap')
 const hoveredToyIndex = ref(null)
 
+// Typewriter effect for analysis text
+const typedStatusQuo = ref('')
+let typewriterTimeout = null
+watch(statusQuo, (text) => {
+  if (!text) return
+  typedStatusQuo.value = ''
+  let i = 0
+  function type() {
+    if (i < text.length) {
+      typedStatusQuo.value += text[i]
+      i++
+      typewriterTimeout = setTimeout(type, 12)
+    }
+  }
+  type()
+})
+
+// Animated counters
+const animatedToyCount = ref(0)
+const animatedSafetyCount = ref(0)
+function animateCounter(target, setter, duration = 1000) {
+  const start = performance.now()
+  function step(now) {
+    const progress = Math.min((now - start) / duration, 1)
+    const eased = 1 - Math.pow(1 - progress, 3)
+    setter(Math.round(eased * target))
+    if (progress < 1) requestAnimationFrame(step)
+  }
+  requestAnimationFrame(step)
+}
+watch(roadmap, (items) => {
+  if (!items.length) return
+  animateCounter(items.length, v => { animatedToyCount.value = v })
+  animateCounter(items.filter(r => r.decision === 'APPROVED').length, v => { animatedSafetyCount.value = v })
+})
+
 const toggleToy = (index) => {
   hoveredToyIndex.value = hoveredToyIndex.value === index ? null : index
 }
@@ -169,6 +205,7 @@ onMounted(() => {
 onUnmounted(() => {
   stopPolling()
   if (messageInterval) clearInterval(messageInterval)
+  if (typewriterTimeout) clearTimeout(typewriterTimeout)
 })
 </script>
 
@@ -382,7 +419,7 @@ onUnmounted(() => {
                     </span>
                   </div>
 
-                  <h3 class="text-xl font-bold mt-2" style="font-family: 'Fredoka', sans-serif;">
+                  <h3 class="text-xl font-bold mt-2 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent" style="font-family: 'Fredoka', sans-serif;">
                     {{ item.final_toy || item.recommended_toy }}
                   </h3>
 
@@ -515,7 +552,7 @@ onUnmounted(() => {
                   <div class="corner-accent bottom-0 right-0 border-b-2 border-r-2"></div>
                 </div>
               </div>
-              <p class="text-base-content/80 leading-relaxed">{{ statusQuo }}</p>
+              <p class="text-base-content/80 leading-relaxed">{{ typedStatusQuo }}<span v-if="typedStatusQuo.length < statusQuo.length" class="typewriter-cursor">|</span></p>
               <!-- Legend -->
               <div v-if="toyInventory.length" class="mt-4 pt-4 border-t border-white/10">
                 <p class="text-sm font-semibold mb-2">Detected Items:</p>
@@ -559,7 +596,7 @@ onUnmounted(() => {
               </h2>
               <div class="grid grid-cols-2 gap-3">
                 <div class="text-center p-3 rounded-xl bg-base-100/30">
-                  <div class="text-2xl font-bold text-primary">{{ roadmap.length }}</div>
+                  <div class="text-2xl font-bold text-primary">{{ animatedToyCount }}</div>
                   <div class="text-xs opacity-70">Toys Recommended</div>
                 </div>
                 <div class="text-center p-3 rounded-xl bg-base-100/30">
@@ -572,7 +609,7 @@ onUnmounted(() => {
                 </div>
                 <div class="text-center p-3 rounded-xl bg-base-100/30">
                   <div class="text-2xl font-bold text-success">
-                    {{ roadmap.filter(r => r.decision === 'APPROVED').length }}/{{ roadmap.length }}
+                    {{ animatedSafetyCount }}/{{ animatedToyCount }}
                   </div>
                   <div class="text-xs opacity-70">Safety Approved</div>
                 </div>
@@ -967,5 +1004,16 @@ onUnmounted(() => {
   opacity: 1;
   transform: translateY(0);
   max-height: 500px;
+}
+
+/* typewriter cursor */
+.typewriter-cursor {
+  animation: blink 0.7s step-end infinite;
+  color: var(--color-primary);
+  font-weight: 300;
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
 }
 </style>
