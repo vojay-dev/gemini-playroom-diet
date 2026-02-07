@@ -191,7 +191,7 @@ const handleSubmit = async () => {
               <span>🧠</span> AI Agents
             </a>
             <a href="https://ai.google.dev/gemini-api/docs" target="_blank" class="badge badge-md badge-soft badge-primary gap-1 p-2 tech-badge pill-in" style="animation-delay: 0.17s">
-              <span>🤖</span> Gemini 3 Flash
+              <span>🤖</span> Gemini 3
             </a>
             <a href="https://airflow.apache.org/" target="_blank" class="badge badge-md badge-soft badge-primary gap-1 p-2 tech-badge pill-in" style="animation-delay: 0.24s">
               <span>🌀</span> Apache Airflow

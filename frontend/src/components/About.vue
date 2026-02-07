@@ -174,7 +174,7 @@ import { RouterLink } from 'vue-router'
             <span>🧠</span> AI Agents
           </div>
           <div class="badge badge-lg badge-soft badge-primary gap-2 p-4">
-            <span>🤖</span> Gemini 3 Flash
+            <span>🤖</span> Gemini 3
           </div>
           <div class="badge badge-lg badge-soft badge-primary gap-2 p-4">
             <span>🌀</span> Apache Airflow

@@ -53,7 +53,7 @@ const nodes = ref([
     id: 'agent-vision',
     type: 'custom',
     position: { x: 50, y: 420 },
-    data: { label: 'Vision Analyzer', icon: '👁️', category: 'ai', tech: 'Gemini 3 Flash' }
+    data: { label: 'Vision Analyzer', icon: '👁️', category: 'ai', tech: 'Gemini 3 Pro' }
   },
   {
     id: 'agent-recommend',
