@@ -8,6 +8,11 @@ let mouseX = 0, mouseY = 0
 let animationId = null
 let toys = []
 let raycaster, mouse
+let lastMouseMoveTime = 0
+
+// Reusable vectors to avoid per-frame allocations
+const _toyWorldPos = new THREE.Vector3()
+const _rayPoint = new THREE.Vector3()
 
 const COLORS = {
   red: 0xE74C3C,
@@ -294,6 +299,10 @@ function init() {
 }
 
 function onMouseMove(event) {
+  const now = performance.now()
+  if (now - lastMouseMoveTime < 32) return // ~30fps throttle
+  lastMouseMoveTime = now
+
   const rect = container.value.getBoundingClientRect()
   mouseX = ((event.clientX - rect.left) / rect.width) * 2 - 1
   mouseY = -((event.clientY - rect.top) / rect.height) * 2 + 1
@@ -342,13 +351,11 @@ function animate() {
     toy.rotation.z += toy.userData.rotationSpeed.z
 
     // Check proximity to mouse ray
-    const toyWorldPos = new THREE.Vector3()
-    toy.getWorldPosition(toyWorldPos)
+    toy.getWorldPosition(_toyWorldPos)
 
     // Calculate distance from mouse ray to toy
-    const rayPoint = new THREE.Vector3()
-    raycaster.ray.closestPointToPoint(toyWorldPos, rayPoint)
-    const distance = toyWorldPos.distanceTo(rayPoint)
+    raycaster.ray.closestPointToPoint(_toyWorldPos, _rayPoint)
+    const distance = _toyWorldPos.distanceTo(_rayPoint)
 
     // Proximity threshold
     const threshold = 3

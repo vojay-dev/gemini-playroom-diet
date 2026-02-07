@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import confetti from 'canvas-confetti'
+let confetti = null
 import SkillRadar from './SkillRadar.vue'
 import ShareCard from './ShareCard.vue'
 
@@ -55,10 +55,10 @@ const toggleToy = (index) => {
 const projectedScores = computed(() => {
   if (!skillScores.value || !roadmap.value.length) return null
   const projected = { ...skillScores.value }
-  roadmap.value.forEach(item => {
+  roadmap.value.forEach((item, i) => {
     const category = item.skill_category
     if (category && projected[category] !== undefined) {
-      projected[category] = Math.min(95, projected[category] + 15 + Math.floor(Math.random() * 5))
+      projected[category] = Math.min(95, projected[category] + 15 + (i * 7 % 5))
     }
   })
   return projected
@@ -137,7 +137,10 @@ const fetchScan = async () => {
       stopPolling()
       if (!hasShownConfetti.value) {
         hasShownConfetti.value = true
-        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } })
+        import('canvas-confetti').then(m => {
+          confetti = m.default
+          confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } })
+        })
       }
     }
   } catch (e) {
