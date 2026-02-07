@@ -53,13 +53,13 @@ const nodes = ref([
     id: 'agent-vision',
     type: 'custom',
     position: { x: 50, y: 420 },
-    data: { label: 'Vision Analyzer', icon: '👁️', category: 'ai', tech: 'Gemini 3 Pro' }
+    data: { label: 'Vision Analyzer', icon: '👁️', category: 'ai', tech: 'Gemini 3 Flash' }
   },
   {
     id: 'agent-recommend',
     type: 'custom',
     position: { x: 0, y: 530 },
-    data: { label: 'Toy Recommender', icon: '🧸', category: 'ai', tech: 'Gemini 3 Flash' }
+    data: { label: 'Playroom Analyzer', icon: '🧸', category: 'ai', tech: 'Gemini 3 Pro' }
   },
   {
     id: 'agent-playquest',
