@@ -52,6 +52,11 @@ gcloud run services update playroom-diet-api --region us-central1 \
 # Add new var
 gcloud run services update playroom-diet-api --region us-central1 \
   --set-env-vars "NEW_VAR=value"
+
+# Update cleanup whitelist (comma-separated scan IDs)
+# ^:^ as delimiter since the value itself contains commas
+gcloud run services update playroom-diet-api --region us-central1 \
+  --update-env-vars "^:^CLEANUP_WHITELIST=id-1,id-2,id-3"
 ```
 
 ### Useful Commands
