@@ -556,7 +556,7 @@ onUnmounted(() => {
                   <div class="corner-accent bottom-0 right-0 border-b-2 border-r-2"></div>
                 </div>
               </div>
-              <p class="text-base-content/80 leading-relaxed">{{ typedStatusQuo }}<span v-if="typedStatusQuo.length < statusQuo.length" class="typewriter-cursor">|</span></p>
+              <p class="text-base-content/80 leading-relaxed"><span v-html="renderMd(typedStatusQuo).replace(/<\/?p>/g, '')"></span><span v-if="typedStatusQuo.length < statusQuo.length" class="typewriter-cursor">|</span></p>
               <!-- Legend -->
               <div v-if="toyInventory.length" class="mt-4 pt-4 border-t border-white/10">
                 <p class="text-sm font-semibold mb-2">Detected Items:</p>
