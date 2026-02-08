@@ -77,6 +77,7 @@ app.state.limiter = limiter
 async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
     return JSONResponse(status_code=429, content={"detail": "Rate limit exceeded"})
 
+# NOTE: Permissive CORS for easier hackathon judging, will be locked down after the event
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
