@@ -3,10 +3,10 @@
  * Compresses images to stay under a target file size while preserving quality.
  */
 
-const MAX_FILE_SIZE = 1.5 * 1024 * 1024 // 1.5 MB
+const MAX_FILE_SIZE = 2.5 * 1024 * 1024 // 2.5 MB
 const MAX_DIMENSION = 2048 // Max width or height
 const INITIAL_QUALITY = 0.9
-const MIN_QUALITY = 0.5
+const MIN_QUALITY = 0.7
 const QUALITY_STEP = 0.1
 
 /**
