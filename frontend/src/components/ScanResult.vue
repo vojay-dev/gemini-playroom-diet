@@ -84,6 +84,10 @@ watch(roadmap, (items) => {
   animateCounter(items.filter(r => r.decision === 'APPROVED').length, v => { animatedSafetyCount.value = v })
 })
 
+import { marked } from 'marked'
+marked.setOptions({ breaks: true, gfm: true })
+const renderMd = (text) => text ? marked.parse(text) : ''
+
 const toggleToy = (index) => {
   hoveredToyIndex.value = hoveredToyIndex.value === index ? null : index
 }
@@ -451,7 +455,7 @@ onUnmounted(() => {
                 <h4 class="font-semibold flex items-center gap-2 mb-2">
                   <span>🧠</span> Why This Toy?
                 </h4>
-                <p class="text-sm text-base-content/80 leading-relaxed">{{ item.reasoning }}</p>
+                <p class="text-sm text-base-content/80 leading-relaxed" v-html="renderMd(item.reasoning)"></p>
               </div>
 
               <!-- Safety -->
@@ -465,7 +469,7 @@ onUnmounted(() => {
                     {{ item.decision }}
                   </span>
                 </h4>
-                <p class="text-sm text-base-content/80 leading-relaxed">{{ item.safety_context }}</p>
+                <p class="text-sm text-base-content/80 leading-relaxed" v-html="renderMd(item.safety_context)"></p>
               </div>
 
               <!-- Reference -->
