@@ -586,9 +586,6 @@ onUnmounted(() => {
                 :scores="skillScores"
                 :projected-scores="projectedScores"
               />
-              <p class="text-xs text-center opacity-50 mt-2">
-                Dashed line shows projected improvement after completing the roadmap
-              </p>
             </div>
           </div>
 
