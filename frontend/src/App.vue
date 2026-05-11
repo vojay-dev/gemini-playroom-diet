@@ -72,7 +72,7 @@ onUnmounted(() => {
           </div>
           <ul
             tabindex="-1"
-            class="menu menu-md dropdown-content bg-base-100 rounded-box z-50 mt-3 w-52 p-2 shadow">
+            class="menu menu-lg dropdown-content bg-base-300/85 backdrop-blur-xl saturate-150 border border-white/10 rounded-2xl z-50 mt-5 w-64 p-3 shadow-2xl">
             <li>
               <RouterLink to="/" @click="closeMenu" v-bind:class="{ 'menu-active': $route.fullPath === '/' }">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -108,9 +108,10 @@ onUnmounted(() => {
           </ul>
         </div>
       </div>
-      <div class="navbar-center">
-        <RouterLink to="/" class="text-xl font-semibold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent hover:opacity-80 hover:scale-105 transition-all" style="font-family: 'Fredoka', sans-serif;">
-          Playroom Diet
+      <div class="navbar-center hidden sm:flex">
+        <RouterLink to="/" class="nav-pill">
+          <span class="nav-pill-dot"></span>
+          <span>Powered by Airflow, Astronomer, and Gemini</span>
         </RouterLink>
       </div>
       <div class="navbar-end gap-2">
@@ -189,6 +190,43 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+.nav-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.85rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.7);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+
+.nav-pill:hover {
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.nav-pill-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  box-shadow: 0 0 8px var(--color-primary);
+  animation: nav-pill-pulse 2.4s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+@keyframes nav-pill-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(0.85); }
+}
+
 .playroom-wall {
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #1a1a2e 100%);
   background-attachment: fixed;
