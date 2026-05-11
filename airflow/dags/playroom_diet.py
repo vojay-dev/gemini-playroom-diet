@@ -115,7 +115,7 @@ def process_scans():
 
     @task.agent(
         agent=Agent(
-            model="gemini-3-flash-preview",
+            model="gemini-3.1-flash-lite",
             output_type=ToyInventory,
             system_prompt="""
                 You are an expert Inventory AI for a child development app.
@@ -157,7 +157,7 @@ def process_scans():
 
     @task.agent(
         agent=Agent(
-            model="gemini-3-flash-preview",
+            model="gemini-3.1-flash-lite",
             output_type=PlayQuest,
             system_prompt="""
                 You are a creative Play Coach who designs fun, engaging activities for children using their existing toys.
@@ -195,7 +195,7 @@ def process_scans():
 
     @task.agent(
         agent=Agent(
-            model="gemini-3-pro-preview",
+            model="gemini-3.1-pro-preview",
             output_type=AnalysisResult,
             system_prompt="""
                 You are an expert Child Development Specialist who uses the US Dept of Labor's O*NET database to scientifically validate play.
@@ -253,7 +253,7 @@ def process_scans():
 
     @task.agent(
         agent=Agent(
-            model="gemini-3-flash-preview",
+            model="gemini-3.1-flash-lite",
             output_type=ToyRecommendation,
             system_prompt="""
                 You are a dual-role agent: CPSC Safety Auditor and Personal Shopper.
