@@ -164,8 +164,8 @@ Don't wait for new toys to arrive. A dedicated AI agent creates a fun, structure
 
 #### Airflow (AI pipeline orchestration)
 
-- [Apache Airflow 3.1](https://airflow.apache.org/)
-- [Airflow AI SDK](https://github.com/astronomer/airflow-ai-sdk)
+- [Apache Airflow 3.2](https://airflow.apache.org/)
+- [Airflow Common AI provider](https://airflow.apache.org/docs/apache-airflow-providers-common-ai/stable/index.html) (`apache-airflow-providers-common-ai`)
 - [Pydantic AI](https://ai.pydantic.dev/)
 - [Gemini API with Gemini 3](https://ai.google.dev/gemini-api/docs)
 - [O*NET abilities and occupations database](https://www.onetcenter.org/database.html) (data source)
@@ -215,31 +215,26 @@ Each scan is moving through 3 distinct states. The backend creates each scan wit
 
 #### AI agents
 
-The [Airflow AI SDK](https://github.com/astronomer/airflow-ai-sdk) is an open-source Python library, that facilitates the integration and orchestration of LLMs and AI agents directly within Apache Airflow pipelines. It provides decorator-based tasks to seamlessly incorporate AI functionality into traditional data and machine learning workflows. It is based on [PydanticAI](https://ai.pydantic.dev/) so that many of the features can be used.
+The [Airflow Common AI provider](https://airflow.apache.org/docs/apache-airflow-providers-common-ai/stable/index.html) (`apache-airflow-providers-common-ai`) is the official Apache Airflow provider for integrating LLMs and AI agents into pipelines. It provides decorator-based tasks (`@task.agent`, `@task.llm`, `@task.llm_branch`, `@task.embed`) that wrap [PydanticAI](https://ai.pydantic.dev/), with LLM configuration moved out of code and into an Airflow connection of type `pydanticai`. This keeps the Dag code focused on agent behavior and the model choice swappable per environment.
 
-The pipeline uses two models: `gemini-3.1-pro-preview` for the analysis agent (complex reasoning with tool use) and `gemini-3-flash-preview` for the remaining agents (vision, safety, play quest). Each agent is configured with per-task `thinking_level` and the vision agent uses `media_resolution: HIGH` for detailed image analysis.
+The default model used for all agents is `gemini-3.1-flash-lite`, configured via the `pydanticai_default` connection. The `analyze_playroom` agent overrides this with `gemini-3.1-pro-preview` for higher reasoning quality. Per-task `model_settings` (such as `thinking_level` and `media_resolution`) are passed through `agent_params` where needed.
 
-For Playroom Diet, all agents are defined with a model, a strict Pydantic output type, a system prompt based on the role in the multi-agent system, `GoogleModelSettings` for model-specific tuning, and some are provided with tool functions.
+For Playroom Diet, all agents are defined with a connection ID, a strict Pydantic output type, a system prompt based on the role in the multi-agent system, and some are provided with tools or model overrides via `agent_params`.
 
 **Example:**
 
 ```python
 @task.agent(
-    agent=Agent(
-        model="gemini-3.1-pro-preview",
-        output_type=AnalysisResult,
-        system_prompt="...",
-        tools=[get_careers_for_skill],
-        model_settings=GoogleModelSettings(
-            google_thinking_config={"thinking_level": "high"}
-        )
-    )
+    llm_conn_id="pydanticai_default",
+    output_type=AnalysisResult,
+    system_prompt="...",
+    agent_params={"tools": [get_careers_for_skill]}
 )
 ```
 
 🤖 **Agent 1:** _Vision Agent_ `analyze_image`
 
-- **Model**: Gemini 3 Flash (`thinking_level: low`, `media_resolution: HIGH`)
+- **Model**: Gemini 3 Flash (`thinking_level: high`, `media_resolution: HIGH`)
 - **Input**: Playroom photo from the image storage
 - **Output**: `ToyInventory` with bounding boxes
 - **Purpose**: Extract every visible toy with normalized coordinates (0-1 range)
@@ -331,7 +326,7 @@ gemini-playroom-diet/
 
 I learned how to productionize multi-agent AI systems, and why using Apache Airflow is a powerful solution for this.
 
-Using the Airflow AI SDK for multi-agent pipelines transforms the development of agentic systems from fragile Python scripts into robust, production-grade workflows. By defining agents as tasks within an Airflow Dag, you gain built-in observability. This architecture treats agents not as isolated scripts but as integrated components of a larger data ecosystem, enabling features like automatic retries, caching, and explicit dependency management between agents.
+Using the Airflow Common AI provider for multi-agent pipelines transforms the development of agentic systems from fragile Python scripts into robust, production-grade workflows. By defining agents as tasks within an Airflow Dag, you gain built-in observability. This architecture treats agents not as isolated scripts but as integrated components of a larger data ecosystem, enabling features like automatic retries, caching, and explicit dependency management between agents. Moving model configuration into an Airflow connection (instead of hardcoding it in the Dag) also makes the same pipeline portable across environments without touching the code.
 
 I also learned that with Gemini 3, vision and reasoning capabilities have reached a level where even critical everyday challenges, like parenting, can be supported safely and effectively.
 
