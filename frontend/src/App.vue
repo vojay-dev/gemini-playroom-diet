@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed, nextTick } from 'vue'
 import PlayroomScene from './components/PlayroomScene.vue'
 import { useToast } from './composables/useToast'
 
@@ -9,7 +9,44 @@ const isNightTheme = ref(true)
 const scansToday = ref(null)
 const dailyLimit = ref(20)
 const dropdownRef = ref(null)
+const ottoOpen = ref(false)
+const ottoCmd = ref('')
+const ottoLines = ref([])
+const ottoInput = ref(null)
 let limitsInterval = null
+
+const ottoToggle = async () => {
+  ottoOpen.value = !ottoOpen.value
+  if (ottoOpen.value) {
+    await nextTick()
+    ottoInput.value?.focus()
+  }
+}
+
+const ottoClose = () => {
+  ottoOpen.value = false
+}
+
+const escapeHtml = (s) => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
+
+const ottoExec = () => {
+  const raw = ottoCmd.value.trim()
+  if (!raw) return
+  const cmd = raw.toLowerCase()
+  ottoLines.value.push({ type: 'echo', text: raw })
+
+  if (cmd === '/otto' || cmd === 'otto') {
+    ottoLines.value.push({ type: 'ok', text: 'opening astronomer.io/product/otto →' })
+    window.open('https://www.astronomer.io/product/otto/', '_blank', 'noopener')
+  } else if (cmd === '/help' || cmd === 'help') {
+    ottoLines.value.push({ type: 'info', text: 'available: /otto · /help · /clear' })
+  } else if (cmd === '/clear' || cmd === 'clear') {
+    ottoLines.value = []
+  } else {
+    ottoLines.value.push({ type: 'err', text: `command not found: ${escapeHtml(raw)}. try /otto` })
+  }
+  ottoCmd.value = ''
+}
 
 const closeMenu = () => {
   // Blur the active element to close the dropdown
@@ -49,6 +86,7 @@ onMounted(() => {
   fetchLimits()
   limitsInterval = setInterval(fetchLimits, 30000)
 
+  setTimeout(() => { ottoOpen.value = true }, 2200)
 })
 
 onUnmounted(() => {
@@ -109,9 +147,20 @@ onUnmounted(() => {
         </div>
       </div>
       <div class="navbar-center hidden sm:flex">
-        <RouterLink to="/" class="nav-pill">
-          <span class="nav-pill-dot"></span>
-          <span>Powered by Airflow, Astronomer, and Gemini</span>
+        <RouterLink to="/" class="nav-stack" aria-label="AI project using Apache Airflow on Astronomer">
+          <span class="nav-stack-label">AI project using</span>
+          <span class="nav-stack-logo nav-stack-logo--airflow">
+            <img src="/airflow.svg" alt="Apache Airflow" />
+          </span>
+          <span class="nav-stack-flow" aria-hidden="true">
+            <span class="nav-stack-flow-line"></span>
+            <span class="nav-stack-flow-dot"></span>
+            <span class="nav-stack-flow-dot"></span>
+            <span class="nav-stack-flow-dot"></span>
+          </span>
+          <span class="nav-stack-logo nav-stack-logo--astro">
+            <img src="/astronomer.svg" alt="Astronomer" />
+          </span>
         </RouterLink>
       </div>
       <div class="navbar-end gap-2">
@@ -156,6 +205,63 @@ onUnmounted(() => {
     <RouterView />
   </main>
 
+  <!-- Otto overlay: terminal window + toggle character -->
+  <aside class="otto-overlay" aria-label="Otto from Astronomer">
+    <Transition name="otto-win">
+      <div v-if="ottoOpen" class="otto-win" role="dialog" aria-label="otto">
+        <!-- Title bar -->
+        <div class="otto-titlebar">
+          <span class="otto-traffic">
+            <button class="otto-light otto-light--red" @click="ottoClose" aria-label="Close"></button>
+            <span class="otto-light otto-light--amber"></span>
+            <span class="otto-light otto-light--green"></span>
+          </span>
+          <span class="otto-titlebar-name">otto</span>
+          <span class="otto-titlebar-spacer"></span>
+        </div>
+
+        <!-- Body -->
+        <div class="otto-body">
+          <p class="otto-line otto-line--intro">
+            <span class="otto-prompt">$</span> Hi, I'm <span class="otto-name">Otto</span>
+          </p>
+          <p class="otto-line otto-line--dim">
+            This Airflow project uses modern orchestration patterns. I can help you build cool stuff like this! Also debugging, optimizing, or upgrading your Airflow Dags.
+          </p>
+          <p v-for="(line, i) in ottoLines" :key="i" class="otto-line" :class="`otto-line--${line.type}`">
+            <template v-if="line.type === 'echo'"><span class="otto-prompt">$</span> {{ line.text }}</template>
+            <template v-else><span v-html="line.text"></span></template>
+          </p>
+        </div>
+
+        <!-- Prompt input -->
+        <form @submit.prevent="ottoExec" class="otto-promptbar">
+          <span class="otto-prompt">$</span>
+          <input
+            ref="ottoInput"
+            v-model="ottoCmd"
+            type="text"
+            autocomplete="off"
+            autocorrect="off"
+            autocapitalize="off"
+            spellcheck="false"
+            placeholder="Type /otto"
+            class="otto-input"
+            aria-label="Otto command"
+          />
+          <a href="https://www.astronomer.io/product/otto/" target="_blank" rel="noopener" class="otto-taplink" aria-label="Open Otto">
+            Tap to open →
+          </a>
+        </form>
+      </div>
+    </Transition>
+
+    <!-- Character (always visible, toggles window) -->
+    <button class="otto-character" @click="ottoToggle" :aria-expanded="ottoOpen" aria-label="Toggle Otto">
+      <img src="/otto.svg" alt="Otto" />
+    </button>
+  </aside>
+
   <!-- Toast container -->
   <div class="toast toast-bottom toast-end z-50 mb-12">
     <div
@@ -190,41 +296,327 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-.nav-pill {
+.nav-stack {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.3rem 0.85rem;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  font-size: 0.75rem;
-  letter-spacing: 0.02em;
-  color: rgba(255, 255, 255, 0.7);
+  gap: 0.625rem;
   text-decoration: none;
   white-space: nowrap;
-  transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+  transition: opacity 0.2s ease;
 }
 
-.nav-pill:hover {
-  border-color: rgba(255, 255, 255, 0.18);
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.9);
+.nav-stack:hover .nav-stack-label {
+  color: rgba(255, 255, 255, 0.75);
 }
 
-.nav-pill-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--color-primary);
-  box-shadow: 0 0 8px var(--color-primary);
-  animation: nav-pill-pulse 2.4s ease-in-out infinite;
+.nav-stack-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 500;
+}
+
+.nav-stack-logo {
+  display: inline-flex;
+  align-items: center;
+  transition: filter 0.3s ease;
+}
+
+.nav-stack-logo img {
+  display: block;
+}
+
+.nav-stack-logo--airflow img {
+  height: 18px;
+  width: 18px;
+  filter: drop-shadow(0 0 6px rgba(17, 225, 238, 0.35));
+  animation: airflow-pulse 4s ease-in-out infinite;
+}
+
+.nav-stack-logo--astro img {
+  height: 11px;
+  width: auto;
+  opacity: 0.9;
+}
+
+@keyframes airflow-pulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 4px rgba(17, 225, 238, 0.25));
+  }
+  50% {
+    filter: drop-shadow(0 0 10px rgba(17, 225, 238, 0.55));
+  }
+}
+
+/* Flow dots traveling Airflow → Astronomer */
+.nav-stack-flow {
+  position: relative;
+  display: inline-block;
+  width: 32px;
+  height: 10px;
   flex-shrink: 0;
 }
 
-@keyframes nav-pill-pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.6; transform: scale(0.85); }
+.nav-stack-flow-line {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(255, 255, 255, 0.18) 30%,
+    rgba(255, 255, 255, 0.18) 70%,
+    transparent
+  );
+  transform: translateY(-50%);
+}
+
+.nav-stack-flow-dot {
+  position: absolute;
+  top: 50%;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.7);
+  transform: translate(-50%, -50%);
+  animation: flow-travel 2.4s linear infinite;
+  opacity: 0;
+}
+
+.nav-stack-flow-dot:nth-child(2) { animation-delay: 0s; }
+.nav-stack-flow-dot:nth-child(3) { animation-delay: 0.8s; }
+.nav-stack-flow-dot:nth-child(4) { animation-delay: 1.6s; }
+
+@keyframes flow-travel {
+  0%   { left: 0%;   opacity: 0; }
+  15%  { opacity: 1; }
+  85%  { opacity: 1; }
+  100% { left: 100%; opacity: 0; }
+}
+
+/* Otto overlay: terminal window + toggle character */
+.otto-overlay {
+  position: fixed;
+  bottom: 4.25rem;
+  right: 1.25rem;
+  display: flex;
+  align-items: flex-end;
+  gap: 0.6rem;
+  z-index: 40;
+  max-width: calc(100vw - 2.5rem);
+}
+
+/* Otto character: minimal — one subtle amber pulse, that's it */
+.otto-character {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 30% 30%, rgba(255, 179, 45, 0.18), rgba(20, 22, 30, 0.92) 70%);
+  border: 1px solid rgba(255, 179, 45, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: pointer;
+  padding: 0;
+  box-shadow: 0 6px 18px -6px rgba(255, 179, 45, 0.3);
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.otto-character:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 179, 45, 0.55);
+  box-shadow: 0 8px 24px -6px rgba(255, 179, 45, 0.45);
+}
+
+.otto-character img {
+  width: 30px;
+  height: 30px;
+  animation: otto-pulse 4s ease-in-out infinite;
+}
+
+@keyframes otto-pulse {
+  0%, 100% { filter: drop-shadow(0 0 4px rgba(255, 179, 45, 0.4)); }
+  50%      { filter: drop-shadow(0 0 12px rgba(255, 179, 45, 0.85)); }
+}
+
+/* Terminal window */
+.otto-win {
+  width: 320px;
+  background: rgba(12, 14, 20, 0.94);
+  backdrop-filter: blur(18px) saturate(140%);
+  border: 1px solid rgba(255, 179, 45, 0.18);
+  border-radius: 0.6rem;
+  overflow: hidden;
+  font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.85);
+  box-shadow:
+    0 16px 50px -12px rgba(0, 0, 0, 0.6),
+    0 0 20px -10px rgba(255, 179, 45, 0.25);
+}
+
+.otto-titlebar {
+  display: flex;
+  align-items: center;
+  padding: 0.45rem 0.65rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.otto-traffic {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.otto-light {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  cursor: default;
+}
+
+.otto-light--red    { background: #ff5f57; cursor: pointer; }
+.otto-light--amber  { background: #ffbd2e; }
+.otto-light--green  { background: #28c941; }
+
+.otto-light--red:hover { background: #ff8079; }
+
+.otto-titlebar-name {
+  flex: 1;
+  text-align: center;
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.5);
+  letter-spacing: 0.02em;
+}
+
+.otto-titlebar-spacer {
+  width: 39px;
+}
+
+/* Body */
+.otto-body {
+  padding: 0.7rem 0.85rem 0.55rem;
+  line-height: 1.55;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.otto-line {
+  margin: 0;
+}
+
+.otto-line + .otto-line {
+  margin-top: 0.25rem;
+}
+
+.otto-line--dim {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.otto-line--echo {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.otto-line--ok  { color: #6dd97e; }
+.otto-line--err { color: #ff7a6b; }
+.otto-line--info { color: rgba(255, 255, 255, 0.7); }
+
+.otto-prompt {
+  color: #ffb32d;
+  margin-right: 0.4rem;
+  user-select: none;
+}
+
+.otto-name {
+  color: #ffb32d;
+  font-weight: 600;
+}
+
+/* Prompt input row */
+.otto-promptbar {
+  display: flex;
+  align-items: center;
+  padding: 0.55rem 0.85rem 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  gap: 0.4rem;
+}
+
+.otto-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: rgba(255, 255, 255, 0.95);
+  font-family: inherit;
+  font-size: inherit;
+  caret-color: #ffb32d;
+  padding: 0;
+  min-width: 0;
+}
+
+.otto-input::placeholder {
+  color: rgba(255, 255, 255, 0.25);
+}
+
+.otto-taplink {
+  display: none;
+  font-size: 0.7rem;
+  color: #ffb32d;
+  text-decoration: none;
+  white-space: nowrap;
+  border: 1px solid rgba(255, 179, 45, 0.3);
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+}
+
+.otto-taplink:hover { color: #ffd57a; border-color: rgba(255, 179, 45, 0.5); }
+
+/* Transitions */
+.otto-win-enter-active {
+  transition: opacity 0.35s ease-out, transform 0.4s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+.otto-win-enter-from {
+  opacity: 0;
+  transform: translate(8px, 12px) scale(0.96);
+}
+.otto-win-leave-active {
+  transition: opacity 0.2s ease-in, transform 0.2s ease-in;
+}
+.otto-win-leave-to {
+  opacity: 0;
+  transform: translate(4px, 4px) scale(0.98);
+}
+
+/* Mobile: replace prompt input with tap link */
+@media (max-width: 640px) {
+  .otto-overlay {
+    bottom: 3.75rem;
+    right: 0.75rem;
+    gap: 0.5rem;
+  }
+  .otto-character {
+    width: 44px;
+    height: 44px;
+  }
+  .otto-character img {
+    width: 24px;
+    height: 24px;
+  }
+  .otto-win {
+    width: 240px;
+    font-size: 0.7rem;
+  }
+  .otto-input { display: none; }
+  .otto-taplink { display: inline-flex; align-items: center; }
+  .otto-promptbar > .otto-prompt { display: none; }
 }
 
 .playroom-wall {
