@@ -47,6 +47,84 @@ const toyInventory = computed(() => result.value?.toy_inventory || [])
 const playQuest = computed(() => result.value?.play_quest || null)
 const activeTab = ref('roadmap')
 const hoveredToyIndex = ref(null)
+const focusedToyIndex = ref(null)
+const isTouring = ref(false)
+let tourInterval = null
+
+const isZoomed = computed(() => focusedToyIndex.value !== null)
+
+// When zoomed, the focused toy's tooltip stays sticky regardless of hover state.
+const displayedTooltipIndex = computed(() =>
+  focusedToyIndex.value !== null ? focusedToyIndex.value : hoveredToyIndex.value
+)
+
+// CSS transform that centers the focused toy in the viewport and scales it up.
+// Translate uses %, which is relative to the unscaled element, so it survives
+// container resizes without recomputation.
+const focusedToyTransform = computed(() => {
+  const idx = focusedToyIndex.value
+  if (idx === null || !toyInventory.value[idx]) return ''
+  const toy = toyInventory.value[idx]
+  const N = 2.5
+  const cx = (toy.bbox.x + toy.bbox.w / 2) * 100
+  const cy = (toy.bbox.y + toy.bbox.h / 2) * 100
+  const range = 50 * (N - 1)  // keep scaled image covering the container
+  const clamp = (v) => Math.max(-range, Math.min(range, v))
+  const tx = clamp((50 - cx) * N)
+  const ty = clamp((50 - cy) * N)
+  return `translate(${tx}%, ${ty}%) scale(${N})`
+})
+
+const onBboxLeave = (index) => {
+  if (focusedToyIndex.value !== index) hoveredToyIndex.value = null
+}
+
+const focusToy = (index) => {
+  if (focusedToyIndex.value === index && !isTouring.value) {
+    releaseFocus()
+  } else {
+    focusedToyIndex.value = index
+    hoveredToyIndex.value = index
+  }
+}
+
+const releaseFocus = () => {
+  if (isTouring.value) stopTour()
+  if (hoveredToyIndex.value === focusedToyIndex.value) {
+    hoveredToyIndex.value = null
+  }
+  focusedToyIndex.value = null
+}
+
+const startTour = () => {
+  if (!toyInventory.value.length) return
+  isTouring.value = true
+  let i = 0
+  focusedToyIndex.value = i
+  hoveredToyIndex.value = i
+  tourInterval = setInterval(() => {
+    i = (i + 1) % toyInventory.value.length
+    focusedToyIndex.value = i
+    hoveredToyIndex.value = i
+  }, 2200)
+}
+
+const stopTour = () => {
+  isTouring.value = false
+  if (tourInterval) {
+    clearInterval(tourInterval)
+    tourInterval = null
+  }
+}
+
+const toggleTour = () => {
+  if (isTouring.value) {
+    stopTour()
+    releaseFocus()
+  } else {
+    startTour()
+  }
+}
 
 // Typewriter effect for analysis text
 const typedStatusQuo = ref('')
@@ -87,10 +165,6 @@ watch(roadmap, (items) => {
 import { marked } from 'marked'
 marked.setOptions({ breaks: true, gfm: true })
 const renderMd = (text) => text ? marked.parse(text) : ''
-
-const toggleToy = (index) => {
-  hoveredToyIndex.value = hoveredToyIndex.value === index ? null : index
-}
 
 const projectedScores = computed(() => {
   if (!skillScores.value || !roadmap.value.length) return null
@@ -210,6 +284,7 @@ onUnmounted(() => {
   stopPolling()
   if (messageInterval) clearInterval(messageInterval)
   if (typewriterTimeout) clearTimeout(typewriterTimeout)
+  if (tourInterval) clearInterval(tourInterval)
 })
 </script>
 
@@ -517,44 +592,88 @@ onUnmounted(() => {
             </div>
             <div class="collapse-content">
               <!-- Heatmap -->
-              <div v-if="imageUrl && toyInventory.length" class="relative rounded-xl overflow-hidden mb-4">
-                <img :src="imageUrl" alt="Your playroom" class="w-full h-auto brightness-50" />
-
-                <!-- Grid -->
-                <div class="absolute inset-0 ai-grid"></div>
-
-                <!-- Detection boxes -->
+              <div
+                v-if="imageUrl && toyInventory.length"
+                class="detection-frame relative rounded-xl overflow-hidden mb-4"
+                @click="releaseFocus"
+              >
+                <!-- Zoom stage: image + bbox layer transform together. -->
                 <div
-                  v-for="(toy, index) in toyInventory"
-                  :key="index"
-                  class="toy-box absolute cursor-pointer"
-                  :class="{ 'is-active': hoveredToyIndex === index }"
-                  :style="{
-                    left: `${toy.bbox.x * 100}%`,
-                    top: `${toy.bbox.y * 100}%`,
-                    width: `${toy.bbox.w * 100}%`,
-                    height: `${toy.bbox.h * 100}%`,
-                    animationDelay: `${index * 0.15}s`
-                  }"
-                  @mouseenter="hoveredToyIndex = index"
-                  @mouseleave="hoveredToyIndex = null"
-                  @click.stop="toggleToy(index)"
+                  class="zoom-stage"
+                  :class="{ 'is-zoomed': isZoomed }"
+                  :style="{ transform: focusedToyTransform }"
                 >
-                  <!-- Tooltip -->
-                  <div
-                    class="toy-tooltip"
-                    :class="{ 'is-visible': hoveredToyIndex === index }"
-                  >
-                    <span class="font-medium">{{ toy.item_name }}</span>
-                    <span class="opacity-70 text-[10px]">{{ toy.play_mode }}</span>
-                  </div>
+                  <img :src="imageUrl" alt="Your playroom" class="w-full h-auto brightness-50" />
 
-                  <!-- Corner accents -->
-                  <div class="corner-accent top-0 left-0 border-t-2 border-l-2"></div>
-                  <div class="corner-accent top-0 right-0 border-t-2 border-r-2"></div>
-                  <div class="corner-accent bottom-0 left-0 border-b-2 border-l-2"></div>
-                  <div class="corner-accent bottom-0 right-0 border-b-2 border-r-2"></div>
+                  <!-- Grid -->
+                  <div class="absolute inset-0 ai-grid"></div>
+
+                  <!-- Detection boxes -->
+                  <div
+                    v-for="(toy, index) in toyInventory"
+                    :key="index"
+                    class="toy-box absolute cursor-pointer"
+                    :class="{
+                      'is-active': displayedTooltipIndex === index,
+                      'is-cluster': toy.count > 1,
+                      'is-focused': focusedToyIndex === index,
+                      'is-dimmed': isZoomed && focusedToyIndex !== index
+                    }"
+                    :style="{
+                      left: `${toy.bbox.x * 100}%`,
+                      top: `${toy.bbox.y * 100}%`,
+                      width: `${toy.bbox.w * 100}%`,
+                      height: `${toy.bbox.h * 100}%`,
+                      animationDelay: `${toy.bbox.y * 2.5}s`
+                    }"
+                    @mouseenter="hoveredToyIndex = index"
+                    @mouseleave="onBboxLeave(index)"
+                    @click.stop="focusToy(index)"
+                  >
+                    <!-- Tooltip -->
+                    <div
+                      class="toy-tooltip"
+                      :class="{ 'is-visible': displayedTooltipIndex === index }"
+                    >
+                      <span class="font-medium">{{ toy.item_name }}</span>
+                      <span class="opacity-70 text-[10px]">
+                        {{ toy.play_mode }}<template v-if="toy.count > 1"> · ×{{ toy.count }}</template>
+                      </span>
+                    </div>
+
+                    <!-- Cluster count chip -->
+                    <div
+                      v-if="toy.count > 1"
+                      class="cluster-chip"
+                    >
+                      ×{{ toy.count }}
+                    </div>
+
+                    <!-- Corner accents -->
+                    <div class="corner-accent top-0 left-0 border-t-2 border-l-2"></div>
+                    <div class="corner-accent top-0 right-0 border-t-2 border-r-2"></div>
+                    <div class="corner-accent bottom-0 left-0 border-b-2 border-l-2"></div>
+                    <div class="corner-accent bottom-0 right-0 border-b-2 border-r-2"></div>
+                  </div>
                 </div>
+
+                <!-- Scan reveal line (animates once on mount) -->
+                <div class="scan-line"></div>
+
+                <!-- Spotlight vignette when zoomed -->
+                <div class="zoom-vignette"></div>
+
+                <!-- Tour control -->
+                <button
+                  type="button"
+                  class="tour-control"
+                  :class="{ 'is-active': isTouring }"
+                  @click.stop="toggleTour"
+                >
+                  <span v-if="isTouring" class="tour-icon">■</span>
+                  <span v-else class="tour-icon">▶</span>
+                  <span>{{ isTouring ? 'Stop tour' : 'Tour' }}</span>
+                </button>
               </div>
               <p class="text-base-content/80 leading-relaxed"><span v-html="renderMd(typedStatusQuo).replace(/<\/?p>/g, '')"></span><span v-if="typedStatusQuo.length < statusQuo.length" class="typewriter-cursor">|</span></p>
               <!-- Legend -->
@@ -566,7 +685,7 @@ onUnmounted(() => {
                     :key="index"
                     class="badge badge-dash badge-info"
                   >
-                    {{ toy.item_name }}
+                    {{ toy.item_name }}<template v-if="toy.count > 1"> ×{{ toy.count }}</template>
                   </span>
                 </div>
               </div>
@@ -834,12 +953,107 @@ onUnmounted(() => {
   100% { mask-position: 0 140%; -webkit-mask-position: 0 140%; }
 }
 
+/* zoom stage: image + bbox layer scale together when a toy is focused */
+.zoom-stage {
+  position: relative;
+  transform-origin: 50% 50%;
+  transform: translate(0, 0) scale(1);
+  transition: transform 0.65s cubic-bezier(0.22, 0.9, 0.22, 1);
+  will-change: transform;
+}
+
+/* scan reveal: cyan line sweeps top→bottom once on first render */
+.scan-line {
+  position: absolute;
+  top: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.95) 50%, transparent);
+  box-shadow: 0 0 18px rgba(34, 211, 238, 0.85), 0 0 36px rgba(34, 211, 238, 0.45);
+  animation: scan-sweep 2.5s cubic-bezier(0.4, 0, 0.6, 1) forwards;
+  z-index: 4;
+  pointer-events: none;
+}
+
+@keyframes scan-sweep {
+  0%   { top: -2px;            opacity: 0; }
+  6%   { opacity: 1; }
+  94%  { opacity: 1; }
+  100% { top: calc(100% + 2px); opacity: 0; }
+}
+
+/* spotlight vignette dims periphery when zoomed */
+.zoom-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 50%, transparent 28%, rgba(0, 0, 0, 0.55) 100%);
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.zoom-stage.is-zoomed ~ .zoom-vignette {
+  opacity: 1;
+}
+
+/* tour control button */
+.tour-control {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 10;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 9999px;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(34, 211, 238, 0.5);
+  color: rgba(255, 255, 255, 0.94);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tour-control:hover {
+  background: rgba(0, 0, 0, 0.78);
+  border-color: rgba(34, 211, 238, 0.85);
+  box-shadow: 0 0 14px rgba(34, 211, 238, 0.35);
+}
+
+.tour-control.is-active {
+  border-color: rgba(168, 85, 247, 0.85);
+  box-shadow: 0 0 14px rgba(168, 85, 247, 0.35);
+}
+
+.tour-icon {
+  font-size: 9px;
+  line-height: 1;
+  transform: translateY(-0.5px);
+}
+
 /* detection boxes */
 .toy-box {
   background: linear-gradient(135deg, rgba(34, 211, 238, 0.22), rgba(168, 85, 247, 0.22));
   border: 1px solid rgba(34, 211, 238, 0.55);
-  transition: all 0.3s ease;
-  animation: box-appear 0.5s ease-out both;
+  transition: opacity 0.4s ease, filter 0.4s ease, border-color 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+  animation: box-appear 0.55s ease-out both;
+}
+
+/* dim non-focused boxes when zoomed; disable interaction so clicks fall through */
+.toy-box.is-dimmed {
+  opacity: 0.08;
+  filter: saturate(0.4);
+  pointer-events: none;
+}
+
+.toy-box.is-focused {
+  z-index: 3;
 }
 
 .toy-box:hover,
@@ -849,13 +1063,50 @@ onUnmounted(() => {
   box-shadow: 0 0 12px rgba(34, 211, 238, 0.3), inset 0 0 12px rgba(34, 211, 238, 0.1);
 }
 
+/* cluster bbox: dashed border hints "this is a group" */
+.toy-box.is-cluster {
+  border-style: dashed;
+  border-color: rgba(168, 85, 247, 0.65);
+}
+
+.toy-box.is-cluster:hover,
+.toy-box.is-cluster.is-active {
+  border-color: rgba(168, 85, 247, 0.95);
+  box-shadow: 0 0 12px rgba(168, 85, 247, 0.35), inset 0 0 12px rgba(168, 85, 247, 0.12);
+}
+
+/* cluster count chip in top-right corner */
+.cluster-chip {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  padding: 1px 6px;
+  border-radius: 9999px;
+  background: rgba(168, 85, 247, 0.92);
+  color: rgba(255, 255, 255, 0.98);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  z-index: 1;
+}
+
 @keyframes box-appear {
   0% {
     opacity: 0;
     border-color: transparent;
+    box-shadow: 0 0 0 rgba(34, 211, 238, 0);
+  }
+  40% {
+    opacity: 1;
+    border-color: rgba(34, 211, 238, 1);
+    box-shadow: 0 0 18px rgba(34, 211, 238, 0.7), inset 0 0 14px rgba(34, 211, 238, 0.22);
   }
   100% {
     opacity: 1;
+    box-shadow: 0 0 0 rgba(34, 211, 238, 0);
   }
 }
 

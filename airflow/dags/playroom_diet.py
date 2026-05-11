@@ -31,7 +31,8 @@ class Toy(BaseModel):
     category: str
     item_name: str
     play_mode: str
-    bbox: BoundingBox  # Location in image (normalized 0-1 coordinates), one per visible toy
+    count: int = 1  # 1 for individuals; >1 only for tight clusters of similar items under one bbox
+    bbox: BoundingBox  # Normalized 0-1 coordinates; hugs the toy, or the whole cluster for cluster entries
 
 class ToyInventory(BaseModel):
     items: list[Toy]
@@ -127,25 +128,37 @@ def process_scans():
             instructions="""
                 You are an expert Toy Detection AI for a child development app.
 
-                Your goal is to identify EVERY individual toy visible in the playroom so a parent can see exactly what they own, item by item.
+                Your goal is to identify the toys visible in the playroom so a parent can see exactly what they own, item by item.
 
-                **Detection rules:**
-                - Treat each visible toy as a SEPARATE entry with its own bounding box, even when several toys share the same type. Three toy cars must produce three entries, not one entry labeled "cars".
-                - Do NOT cluster nearby toys into one broad bbox. Each distinguishable item gets its own tight bbox.
-                - Detect at fine granularity: one stuffed animal, one specific puzzle, one specific book, one single building block if clearly separable from the rest.
-                - Only collapse items into one entry when they form a single inseparable set (e.g., a board game in its closed box, a dollhouse with its built-in fixtures).
-                - Err on the side of MORE entries. If you can see it as a distinct object, list it.
+                **Default mode: INDIVIDUAL detection (count = 1)**
+                - Treat each visible toy as a SEPARATE entry with its own tight bounding box and `count: 1`.
+                - Three visually distinct toy cars must produce three entries, not one. Two stuffed animals side by side stay individual.
+                - Detect at fine granularity: one stuffed animal, one specific puzzle, one specific book, one single building block when clearly separable.
+                - Err strongly on the side of MORE entries. If you can see it as a distinct object, list it individually.
 
-                **For each toy:**
+                **Clustering exception (use sparingly, only when clearly warranted)**
+                Use ONE entry with `count > 1` and one bbox enclosing the whole pile ONLY in these cases:
+                - A container, bin, or basket holding many (5+) visually similar items (e.g., a tub of Duplos, a bin of identical balls, a box of crayons).
+                - A dense heap or stack of 5+ near-identical items where drawing individual outlines would only add visual clutter.
+                The cluster's `item_name` should describe the group (e.g., "Duplo Block Pile", "Crayon Set", "Toy Car Bin").
+                Set `count` to your honest estimate of the number of items in the cluster.
+
+                **Never cluster these:**
+                - Visually distinct toys that just happen to sit near each other.
+                - Small groups of 2-4 similar toys. These stay individual.
+                - Anything just because the room is busy.
+
+                **For each entry:**
                 1. "category": Broad type (e.g., Vehicle, Construction, Doll, Puzzle, Art, Active, Plush, Book, Musical).
-                2. "item_name": Specific description (e.g., "Red Hot Wheels Car", "Wooden Train Engine", "Brown Teddy Bear", "Single Duplo Block").
+                2. "item_name": Specific description (e.g., "Red Hot Wheels Car", "Brown Teddy Bear", "Duplo Block Pile").
                 3. "play_mode": Primary interaction (e.g., "Passive", "Constructive", "Pretend Play", "Gross Motor", "Fine Motor").
-                4. "bbox": Tight bounding box around the individual toy, in NORMALIZED coordinates (0-1 range):
+                4. "count": 1 for individual items; honest estimate for clusters.
+                5. "bbox": Tight bounding box in NORMALIZED coordinates (0-1 range):
                 - "x": Left edge (0 = left, 1 = right)
                 - "y": Top edge (0 = top, 1 = bottom)
                 - "w": Width (0-1)
                 - "h": Height (0-1)
-                The bbox must hug the toy, not the surrounding area.
+                The bbox must hug the toy (or the whole cluster, for cluster entries).
 
                 You can define your own categories and play modes based on what you see.
                 If the image is not a playroom or no toys are visible, respond with an empty "items" list.
