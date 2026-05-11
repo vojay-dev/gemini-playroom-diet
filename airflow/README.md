@@ -1,6 +1,6 @@
 # Playroom Diet - Airflow
 
-Multi-agent AI pipeline for playroom analysis using [Apache Airflow 3.1](https://airflow.apache.org/), the [Airflow AI SDK](https://github.com/astronomer/airflow-ai-sdk) and Gemini 3 Flash.
+Multi-agent AI pipeline for playroom analysis using [Apache Airflow 3.2](https://airflow.apache.org/), the [Airflow Common AI provider](https://airflow.apache.org/docs/apache-airflow-providers-common-ai/stable/index.html) and Gemini 3 Flash.
 
 ## Overview
 
@@ -25,24 +25,22 @@ The Dag uses **atomic scan claiming** via `UPDATE ... FOR UPDATE SKIP LOCKED` to
 
 ![Agent overview](doc/agent-overview.png)
 
-## AI agents and the Airflow AI SDK
+## AI agents and the Common AI provider
 
-The [Airflow AI SDK](https://github.com/astronomer/airflow-ai-sdk) is an open-source Python library, that facilitates the integration and orchestration of LLMs and AI agents directly within Apache Airflow pipelines. It provides decorator-based tasks to seamlessly incorporate AI functionality into traditional data and machine learning workflows. It is based on [PydanticAI](https://ai.pydantic.dev/) so that many of the features can be used.
+The [Airflow Common AI provider](https://airflow.apache.org/docs/apache-airflow-providers-common-ai/stable/index.html) (`apache-airflow-providers-common-ai`) is the official Apache Airflow provider for integrating LLMs and AI agents into pipelines. It provides decorator-based tasks (`@task.agent`, `@task.llm`, `@task.llm_branch`) that wrap [PydanticAI](https://ai.pydantic.dev/), with LLM configuration moved out of code and into an Airflow connection of type `pydanticai`.
 
-The model used for all agents is `gemini-3-flash-preview`.
+The default model used for all agents is `gemini-3.1-flash-lite`, configured via the `pydanticai_default` connection. The `analyze_playroom` agent overrides this with `gemini-3.1-pro-preview` for higher reasoning quality.
 
-For Playroom Diet, all agents are defined with a model, a strict Pydantic output type, a system prompt based on the role in the multi-agent system, and some are provided with tool functions.
+For Playroom Diet, all agents are defined with a connection ID, a strict Pydantic output type, a system prompt based on the role in the multi-agent system, and some are provided with tool functions via `agent_params`.
 
 **Example:**
 
 ```python
 @task.agent(
-    agent=Agent(
-        model="gemini-3-flash-preview",
-        output_type=AnalysisResult,
-        system_prompt="...",
-        tools=[get_careers_for_skill]
-    )
+    llm_conn_id="pydanticai_default",
+    output_type=AnalysisResult,
+    system_prompt="...",
+    agent_params={"tools": [get_careers_for_skill]}
 )
 ```
 
@@ -147,12 +145,12 @@ Copy `.env.dist` to `.env` and configure:
 
 ```
 AIRFLOW_CONN_POSTGRES_PLAYROOM_DIET=postgresql://<supabase_connection_string>?sslmode=require
-GEMINI_API_KEY=<gemini_api_key>
+AIRFLOW_CONN_PYDANTICAI_DEFAULT='{"conn_type": "pydanticai", "password": "<gemini_api_key>", "extra": {"model": "google-gla:gemini-3.1-flash-lite"}}'
 SUPABASE_PROJECT_URL=https://<supabase_project_url>
 SUPABASE_SECRET_KEY=<supabase_secret_key>
 ```
 
-The Postgres connection with ID `postgres_playroom_diet` is created via the env variable.
+The Postgres connection with ID `postgres_playroom_diet` and the PydanticAI connection with ID `pydanticai_default` are created via the env variables.
 
 ## Running locally
 

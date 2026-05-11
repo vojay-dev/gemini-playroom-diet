@@ -217,7 +217,7 @@ Each scan is moving through 3 distinct states. The backend creates each scan wit
 
 The [Airflow AI SDK](https://github.com/astronomer/airflow-ai-sdk) is an open-source Python library, that facilitates the integration and orchestration of LLMs and AI agents directly within Apache Airflow pipelines. It provides decorator-based tasks to seamlessly incorporate AI functionality into traditional data and machine learning workflows. It is based on [PydanticAI](https://ai.pydantic.dev/) so that many of the features can be used.
 
-The pipeline uses two models: `gemini-3-pro-preview` for the analysis agent (complex reasoning with tool use) and `gemini-3-flash-preview` for the remaining agents (vision, safety, play quest). Each agent is configured with per-task `thinking_level` and the vision agent uses `media_resolution: HIGH` for detailed image analysis.
+The pipeline uses two models: `gemini-3.1-pro-preview` for the analysis agent (complex reasoning with tool use) and `gemini-3-flash-preview` for the remaining agents (vision, safety, play quest). Each agent is configured with per-task `thinking_level` and the vision agent uses `media_resolution: HIGH` for detailed image analysis.
 
 For Playroom Diet, all agents are defined with a model, a strict Pydantic output type, a system prompt based on the role in the multi-agent system, `GoogleModelSettings` for model-specific tuning, and some are provided with tool functions.
 
@@ -226,7 +226,7 @@ For Playroom Diet, all agents are defined with a model, a strict Pydantic output
 ```python
 @task.agent(
     agent=Agent(
-        model="gemini-3-pro-preview",
+        model="gemini-3.1-pro-preview",
         output_type=AnalysisResult,
         system_prompt="...",
         tools=[get_careers_for_skill],

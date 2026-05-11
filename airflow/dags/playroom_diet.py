@@ -3,10 +3,11 @@ import os
 from airflow.configuration import AIRFLOW_HOME
 from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
 from airflow.sdk import dag, task
-from airflow_ai_sdk import BaseModel
+from airflow.providers.common.ai.hooks.pydantic_ai import PydanticAIHook
+from pydantic import BaseModel
 import httpx
 from supabase import create_client
-from pydantic_ai import BinaryContent, Agent
+from pydantic_ai import BinaryContent
 from pydantic_ai.models.google import GoogleModelSettings
 from pydantic_ai.common_tools.duckduckgo import duckduckgo_search_tool
 from pendulum import duration
@@ -29,9 +30,8 @@ class BoundingBox(BaseModel):
 class Toy(BaseModel):
     category: str
     item_name: str
-    count: int
     play_mode: str
-    bbox: BoundingBox  # Location in image (normalized 0-1 coordinates)
+    bbox: BoundingBox  # Location in image (normalized 0-1 coordinates), one per visible toy
 
 class ToyInventory(BaseModel):
     items: list[Toy]
@@ -113,76 +113,88 @@ def process_scans():
         """,
     )
 
-    @task.agent(
-        agent=Agent(
-            model="gemini-3.1-flash-lite",
+    # @task.agent requires the callable to return a non-empty string, which
+    # doesn't fit a multimodal vision call. We build the agent manually via
+    # PydanticAIHook so we can pass an image alongside the text prompt.
+    @task(max_active_tis_per_dag=2)
+    def analyze_image(scan_record: tuple) -> dict:
+        hook = PydanticAIHook(
+            llm_conn_id="pydanticai_default",
+            model_id="google-gla:gemini-3-flash-preview",
+        )
+        agent = hook.create_agent(
             output_type=ToyInventory,
-            system_prompt="""
-                You are an expert Inventory AI for a child development app.
+            instructions="""
+                You are an expert Toy Detection AI for a child development app.
 
-                Your goal is to categorize the inventory to help a parent declutter.
+                Your goal is to identify EVERY individual toy visible in the playroom so a parent can see exactly what they own, item by item.
 
-                Please extract the following for EVERY distinct group of toys you see:
-                1. "category": Broad type (e.g., Vehicle, Construction, Doll, Puzzle, Art, Active).
-                2. "item_name": Specific description (e.g., "Hot Wheels Cars", "Duplo Blocks").
-                3. "count": An estimated count (e.g., 1, 2, 5).
-                4. "play_mode": The primary type of interaction (e.g., "Passive", "Constructive", "Pretend Play", "Gross Motor", "Fine Motor").
-                5. "bbox": Bounding box location in the image using NORMALIZED coordinates (0-1 range):
-                - "x": Left edge position (0 = left side, 1 = right side)
-                - "y": Top edge position (0 = top, 1 = bottom)
-                - "w": Width of the bounding box (0-1)
-                - "h": Height of the bounding box (0-1)
-                Example: A toy in the center would have bbox: {"x": 0.4, "y": 0.4, "w": 0.2, "h": 0.2}
+                **Detection rules:**
+                - Treat each visible toy as a SEPARATE entry with its own bounding box, even when several toys share the same type. Three toy cars must produce three entries, not one entry labeled "cars".
+                - Do NOT cluster nearby toys into one broad bbox. Each distinguishable item gets its own tight bbox.
+                - Detect at fine granularity: one stuffed animal, one specific puzzle, one specific book, one single building block if clearly separable from the rest.
+                - Only collapse items into one entry when they form a single inseparable set (e.g., a board game in its closed box, a dollhouse with its built-in fixtures).
+                - Err on the side of MORE entries. If you can see it as a distinct object, list it.
 
-                You can define your own categories and play modes based on the toys you see.
-                If the image provided is not a playroom or no toys are visible, respond with an empty "items" list.
+                **For each toy:**
+                1. "category": Broad type (e.g., Vehicle, Construction, Doll, Puzzle, Art, Active, Plush, Book, Musical).
+                2. "item_name": Specific description (e.g., "Red Hot Wheels Car", "Wooden Train Engine", "Brown Teddy Bear", "Single Duplo Block").
+                3. "play_mode": Primary interaction (e.g., "Passive", "Constructive", "Pretend Play", "Gross Motor", "Fine Motor").
+                4. "bbox": Tight bounding box around the individual toy, in NORMALIZED coordinates (0-1 range):
+                - "x": Left edge (0 = left, 1 = right)
+                - "y": Top edge (0 = top, 1 = bottom)
+                - "w": Width (0-1)
+                - "h": Height (0-1)
+                The bbox must hug the toy, not the surrounding area.
+
+                You can define your own categories and play modes based on what you see.
+                If the image is not a playroom or no toys are visible, respond with an empty "items" list.
             """,
             model_settings=GoogleModelSettings(
                 google_video_resolution="MEDIA_RESOLUTION_HIGH",
-                google_thinking_config={"thinking_level": "low"}
-            )
-        ),
-        max_active_tis_per_dag=2
-    )
-    def analyze_image(scan_record: tuple):
+                google_thinking_config={"thinking_level": "high"}
+            ),
+        )
+
         image_path = scan_record[1]
         image_bytes = get_image_bytes(image_path)
 
-        return [
+        result = agent.run_sync([
             "Analyze the playroom image provided, which contains a collection of children's toys.",
-            BinaryContent(data=image_bytes, media_type='image/jpeg')
-        ]
+            BinaryContent(data=image_bytes, media_type='image/jpeg'),
+        ])
+        return result.output.model_dump()
 
     toy_inventories = analyze_image.expand(scan_record=_get_new_scans.output)
 
     @task.agent(
-        agent=Agent(
-            model="gemini-3.1-flash-lite",
-            output_type=PlayQuest,
-            system_prompt="""
-                You are a creative Play Coach who designs fun, engaging activities for children using their existing toys.
+        llm_conn_id="pydanticai_default",
+        output_type=PlayQuest,
+        system_prompt="""
+            You are a creative Play Coach who designs fun, engaging activities for children using their existing toys.
 
-                **Your task:**
-                Create ONE "Play Quest" - a structured play activity that:
-                1. Uses 2-4 toys from the provided inventory (no new purchases needed)
-                2. Targets a specific O*NET cognitive or physical ability
-                3. Is age-appropriate, fun, and takes 10-30 minutes
-                4. Includes clear instructions parents can follow
+            **Your task:**
+            Create ONE "Play Quest" - a structured play activity that:
+            1. Uses 2-4 toys from the provided inventory (no new purchases needed)
+            2. Targets a specific O*NET cognitive or physical ability
+            3. Is age-appropriate, fun, and takes 10-30 minutes
+            4. Includes clear instructions parents can follow
 
-                **Output format:**
-                - title: A fun, adventure-style name (e.g., "The Tower Challenge", "Treasure Hunt Adventure")
-                - target_skill: The O*NET ability name being developed
-                - skill_id: The O*NET ID (e.g., "1.A.1.f.2")
-                - duration_minutes: Estimated time (10-30)
-                - toys_needed: List of 2-4 toys from the inventory to use
-                - setup: One paragraph on how to prepare the activity
-                - instructions: 3-5 clear steps for the activity
-                - parent_tip: One sentence on how to make it more engaging or educational
-            """,
-            model_settings=GoogleModelSettings(
+            **Output format:**
+            - title: A fun, adventure-style name (e.g., "The Tower Challenge", "Treasure Hunt Adventure")
+            - target_skill: The O*NET ability name being developed
+            - skill_id: The O*NET ID (e.g., "1.A.1.f.2")
+            - duration_minutes: Estimated time (10-30)
+            - toys_needed: List of 2-4 toys from the inventory to use
+            - setup: One paragraph on how to prepare the activity
+            - instructions: 3-5 clear steps for the activity
+            - parent_tip: One sentence on how to make it more engaging or educational
+        """,
+        agent_params={
+            "model_settings": GoogleModelSettings(
                 google_thinking_config={"thinking_level": "medium"}
             )
-        ),
+        },
         max_active_tis_per_dag=2
     )
     def generate_play_quest(zipped_input: tuple):
@@ -194,53 +206,54 @@ def process_scans():
     play_quests = generate_play_quest.expand(zipped_input=zipped_quest_input)
 
     @task.agent(
-        agent=Agent(
-            model="gemini-3.1-pro-preview",
-            output_type=AnalysisResult,
-            system_prompt="""
-                You are an expert Child Development Specialist who uses the US Dept of Labor's O*NET database to scientifically validate play.
+        llm_conn_id="pydanticai_default",
+        model_id="google-gla:gemini-3.1-pro-preview",
+        output_type=AnalysisResult,
+        system_prompt="""
+            You are an expert Child Development Specialist who uses the US Dept of Labor's O*NET database to scientifically validate play.
 
-                **The core logic:**
-                You treat "play" as the child's "job". Your goal is to map toy interactions to official O*NET abilities.
-                - Example: "Stacking Blocks" = "Visualization (1.A.1.f.2)" and "Finger Dexterity (1.A.2.a.2)".
-                - Example: "Riding a Bike" = "Gross Body Coordination (1.A.3.c.3)".
+            **The core logic:**
+            You treat "play" as the child's "job". Your goal is to map toy interactions to official O*NET abilities.
+            - Example: "Stacking Blocks" = "Visualization (1.A.1.f.2)" and "Finger Dexterity (1.A.2.a.2)".
+            - Example: "Riding a Bike" = "Gross Body Coordination (1.A.3.c.3)".
 
-                **Your task:**
-                1. **Audit:** Analyze the provided inventory and assess current skill development.
-                2. **Score:** Rate the child's current development in 6 categories (0-100 scale):
-                - cognitive: problem solving, reasoning, memory
-                - motor_fine: finger dexterity, precision, hand-eye coordination
-                - motor_gross: body coordination, balance, strength
-                - social_emotional: empathy, cooperation, emotional expression
-                - creative: imagination, artistic expression, open-ended play
-                - language: communication, vocabulary, storytelling
-                3. **Roadmap:** Create a 3-item development roadmap with priorities:
-                - Priority 1 (timeframe: "now"): Most critical gap to address immediately
-                - Priority 2 (timeframe: "3_months"): Second priority for near-term
-                - Priority 3 (timeframe: "6_months"): Third priority for longer-term growth
+            **Your task:**
+            1. **Audit:** Analyze the provided inventory and assess current skill development.
+            2. **Score:** Rate the child's current development in 6 categories (0-100 scale):
+            - cognitive: problem solving, reasoning, memory
+            - motor_fine: finger dexterity, precision, hand-eye coordination
+            - motor_gross: body coordination, balance, strength
+            - social_emotional: empathy, cooperation, emotional expression
+            - creative: imagination, artistic expression, open-ended play
+            - language: communication, vocabulary, storytelling
+            3. **Roadmap:** Create a 3-item development roadmap with priorities:
+            - Priority 1 (timeframe: "now"): Most critical gap to address immediately
+            - Priority 2 (timeframe: "3_months"): Second priority for near-term
+            - Priority 3 (timeframe: "6_months"): Third priority for longer-term growth
 
-                **Age-appropriate recommendations:**
-                The input includes the child's age. Recommend toys that children of that age typically enjoy.
-                Use the age as a guide, not a strict limit - a range of ±1-2 years is acceptable.
-                Avoid recommending toddler toys for school-age children or complex toys for toddlers.
+            **Age-appropriate recommendations:**
+            The input includes the child's age. Recommend toys that children of that age typically enjoy.
+            Use the age as a guide, not a strict limit - a range of ±1-2 years is acceptable.
+            Avoid recommending toddler toys for school-age children or complex toys for toddlers.
 
-                **Requirements:**
-                - In status_quo, summarize the dominant O*NET Ability clusters present.
-                - In skill_scores, provide realistic scores based on the toy inventory analysis.
-                - In roadmap, provide exactly 3 items. Each must include:
-                - The specific O*NET Ability Name in missing_skill
-                - The O*NET ID Code in skill_id (e.g., "1.A.1.f.2")
-                - Which of the 6 categories it maps to in skill_category
-                - A specific toy recommendation in recommended_toy that is age-appropriate
-                - Scientific reasoning citing the O*NET ability
-                - Use the `get_careers_for_skill` tool to mention 1-2 future professions that rely on this skill
-                - Add a career forecasting to the reasoning of the roadmap items, based on the O*NET data
-            """,
-            tools=[get_careers_for_skill],
-            model_settings=GoogleModelSettings(
+            **Requirements:**
+            - In status_quo, summarize the dominant O*NET Ability clusters present.
+            - In skill_scores, provide realistic scores based on the toy inventory analysis.
+            - In roadmap, provide exactly 3 items. Each must include:
+            - The specific O*NET Ability Name in missing_skill
+            - The O*NET ID Code in skill_id (e.g., "1.A.1.f.2")
+            - Which of the 6 categories it maps to in skill_category
+            - A specific toy recommendation in recommended_toy that is age-appropriate
+            - Scientific reasoning citing the O*NET ability
+            - Use the `get_careers_for_skill` tool to mention 1-2 future professions that rely on this skill
+            - Add a career forecasting to the reasoning of the roadmap items, based on the O*NET data
+        """,
+        agent_params={
+            "tools": [get_careers_for_skill],
+            "model_settings": GoogleModelSettings(
                 google_thinking_config={"thinking_level": "high"}
             )
-        ),
+        },
         max_active_tis_per_dag=2
     )
     def analyze_playroom(zipped_input: tuple):
@@ -252,37 +265,37 @@ def process_scans():
     analysis_results = analyze_playroom.expand(zipped_input=zipped_analysis_input)
 
     @task.agent(
-        agent=Agent(
-            model="gemini-3.1-flash-lite",
-            output_type=ToyRecommendation,
-            system_prompt="""
-                You are a dual-role agent: CPSC Safety Auditor and Personal Shopper.
+        llm_conn_id="pydanticai_default",
+        output_type=ToyRecommendation,
+        system_prompt="""
+            You are a dual-role agent: CPSC Safety Auditor and Personal Shopper.
 
-                **Input:** A development roadmap with 3 recommended toys and the child's age.
+            **Input:** A development roadmap with 3 recommended toys and the child's age.
 
-                **For EACH of the 3 toys in the roadmap:**
+            **For EACH of the 3 toys in the roadmap:**
 
-                **Step 1: Safety Audit**
-                Check the toy against CPSC guidelines for the child's age.
-                - If safe: Keep the recommendation (decision: "APPROVED").
-                - If unsafe: Select a safer alternative that achieves the same developmental goal (decision: "SUBSTITUTED").
+            **Step 1: Safety Audit**
+            Check the toy against CPSC guidelines for the child's age.
+            - If safe: Keep the recommendation (decision: "APPROVED").
+            - If unsafe: Select a safer alternative that achieves the same developmental goal (decision: "SUBSTITUTED").
 
-                **Step 2: Shopping Prep**
-                Generate a specific 'amazon_search' for the FINAL toy.
-                - Include brand names if they matter for safety.
-                - Exclude generic terms that lead to low-quality knock-offs.
+            **Step 2: Shopping Prep**
+            Generate a specific 'amazon_search' for the FINAL toy.
+            - Include brand names if they matter for safety.
+            - Exclude generic terms that lead to low-quality knock-offs.
 
-                **Requirements:**
-                - Return exactly 3 items, one for each roadmap entry.
-                - Preserve the timeframe ("now", "3_months", "6_months") from the input.
-                - Decision must be "APPROVED" or "SUBSTITUTED".
-                - Provide a clear 'safety_context' explaining your decision for each toy.
-            """,
-            tools=[duckduckgo_search_tool()],
-            model_settings=GoogleModelSettings(
+            **Requirements:**
+            - Return exactly 3 items, one for each roadmap entry.
+            - Preserve the timeframe ("now", "3_months", "6_months") from the input.
+            - Decision must be "APPROVED" or "SUBSTITUTED".
+            - Provide a clear 'safety_context' explaining your decision for each toy.
+        """,
+        agent_params={
+            "tools": [duckduckgo_search_tool()],
+            "model_settings": GoogleModelSettings(
                 google_thinking_config={"thinking_level": "low"}
             )
-        ),
+        },
         max_active_tis_per_dag=2
     )
     def safety_check(zipped_input: tuple):

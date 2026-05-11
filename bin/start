@@ -11,6 +11,17 @@ cleanup() {
 
 trap cleanup SIGINT
 
+# Update frontend API URL with current LAN IP (so phones on the same network work)
+IP=$(ipconfig getifaddr en0 2>/dev/null)
+[ -z "$IP" ] && IP=$(ipconfig getifaddr en1 2>/dev/null)
+[ -z "$IP" ] && IP="localhost"
+echo "--- Setting GPD_API_URL to http://$IP:8000 ---"
+if [ -f frontend/.env ] && grep -q "^GPD_API_URL=" frontend/.env; then
+    sed -i '' "s|^GPD_API_URL=.*|GPD_API_URL=http://$IP:8000|" frontend/.env
+else
+    echo "GPD_API_URL=http://$IP:8000" >> frontend/.env
+fi
+
 # Airflow
 echo "--- Starting Airflow ---"
 (cd airflow && astro dev kill && astro dev start)

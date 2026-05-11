@@ -546,7 +546,7 @@ onUnmounted(() => {
                     :class="{ 'is-visible': hoveredToyIndex === index }"
                   >
                     <span class="font-medium">{{ toy.item_name }}</span>
-                    <span class="opacity-70 text-[10px]">{{ toy.play_mode }} · x{{ toy.count }}</span>
+                    <span class="opacity-70 text-[10px]">{{ toy.play_mode }}</span>
                   </div>
 
                   <!-- Corner accents -->
@@ -566,7 +566,7 @@ onUnmounted(() => {
                     :key="index"
                     class="badge badge-dash badge-info"
                   >
-                    {{ toy.item_name }} ({{ toy.count }})
+                    {{ toy.item_name }}
                   </span>
                 </div>
               </div>
