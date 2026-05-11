@@ -1,18 +1,81 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import * as THREE from 'three'
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js'
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
+import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js'
+import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js'
 
 const container = ref(null)
 let scene, camera, renderer
+let composer, bloomPass, finishPass
+let starfield = null
 let mouseX = 0, mouseY = 0
 let animationId = null
 let toys = []
 let raycaster, mouse
 let lastMouseMoveTime = 0
+let usePostprocessing = true
+let lowQuality = false
 
 // Reusable vectors to avoid per-frame allocations
 const _toyWorldPos = new THREE.Vector3()
 const _rayPoint = new THREE.Vector3()
+
+// Combined chromatic aberration + vignette + film grain in one fragment pass.
+const FinishShader = {
+  uniforms: {
+    tDiffuse: { value: null },
+    uTime: { value: 0 },
+    uAberration: { value: 0.0028 },
+    uVignette: { value: 0.55 },
+    uGrain: { value: 0.012 },
+  },
+  vertexShader: /* glsl */ `
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  fragmentShader: /* glsl */ `
+    uniform sampler2D tDiffuse;
+    uniform float uTime;
+    uniform float uAberration;
+    uniform float uVignette;
+    uniform float uGrain;
+    varying vec2 vUv;
+
+    float random(vec2 st) {
+      return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453123);
+    }
+
+    void main() {
+      vec2 uv = vUv;
+      vec2 offset = uv - 0.5;
+      float dist = length(offset);
+      vec2 dir = normalize(offset + 0.0001);
+
+      // Radial chromatic aberration: stronger toward the edges.
+      float aberration = uAberration * dist * 2.0;
+      vec3 col;
+      col.r = texture2D(tDiffuse, uv - dir * aberration).r;
+      col.g = texture2D(tDiffuse, uv).g;
+      col.b = texture2D(tDiffuse, uv + dir * aberration).b;
+
+      // Vignette: darken corners.
+      float vig = smoothstep(uVignette + 0.45, uVignette - 0.15, dist);
+      col *= mix(0.55, 1.0, vig);
+
+      // Film grain.
+      float grain = (random(uv + fract(uTime)) - 0.5) * uGrain;
+      col += grain;
+
+      gl_FragColor = vec4(col, 1.0);
+    }
+  `,
+}
 
 const COLORS = {
   red: 0xE74C3C,
@@ -30,14 +93,14 @@ const COLOR_ARRAY = Object.values(COLORS)
 
 function createToyBlock(color, size = 0.6) {
   const geo = new THREE.BoxGeometry(size, size, size)
-  const mat = new THREE.MeshLambertMaterial({ color })
+  const mat = new THREE.MeshStandardMaterial({ color })
   const block = new THREE.Mesh(geo, mat)
   return block
 }
 
 function createToyBall(color, radius = 0.4) {
   const geo = new THREE.SphereGeometry(radius, 16, 16)
-  const mat = new THREE.MeshLambertMaterial({ color })
+  const mat = new THREE.MeshStandardMaterial({ color })
   const ball = new THREE.Mesh(geo, mat)
   return ball
 }
@@ -46,19 +109,19 @@ function createToyCar() {
   const car = new THREE.Group()
 
   const bodyGeo = new THREE.BoxGeometry(1.2, 0.4, 0.6)
-  const bodyMat = new THREE.MeshLambertMaterial({ color: COLORS.red })
+  const bodyMat = new THREE.MeshStandardMaterial({ color: COLORS.red })
   const body = new THREE.Mesh(bodyGeo, bodyMat)
   body.position.y = 0.1
   car.add(body)
 
   const cabinGeo = new THREE.BoxGeometry(0.6, 0.35, 0.5)
-  const cabinMat = new THREE.MeshLambertMaterial({ color: 0x87CEEB })
+  const cabinMat = new THREE.MeshStandardMaterial({ color: 0x87CEEB })
   const cabin = new THREE.Mesh(cabinGeo, cabinMat)
   cabin.position.set(-0.1, 0.35, 0)
   car.add(cabin)
 
   const wheelGeo = new THREE.CylinderGeometry(0.15, 0.15, 0.1, 16)
-  const wheelMat = new THREE.MeshLambertMaterial({ color: 0x333333 })
+  const wheelMat = new THREE.MeshStandardMaterial({ color: 0x333333 })
 
   const wheelPositions = [
     [-0.4, -0.05, 0.35],
@@ -79,7 +142,7 @@ function createToyCar() {
 
 function createTeddyBear() {
   const teddy = new THREE.Group()
-  const mat = new THREE.MeshLambertMaterial({ color: COLORS.brown })
+  const mat = new THREE.MeshStandardMaterial({ color: COLORS.brown })
 
   const bodyGeo = new THREE.SphereGeometry(0.5, 16, 16)
   const body = new THREE.Mesh(bodyGeo, mat)
@@ -102,19 +165,19 @@ function createTeddyBear() {
   teddy.add(earR)
 
   const snoutGeo = new THREE.SphereGeometry(0.15, 12, 12)
-  const snoutMat = new THREE.MeshLambertMaterial({ color: 0xF5DEB3 })
+  const snoutMat = new THREE.MeshStandardMaterial({ color: 0xF5DEB3 })
   const snout = new THREE.Mesh(snoutGeo, snoutMat)
   snout.position.set(0, 0.75, 0.35)
   teddy.add(snout)
 
   const noseGeo = new THREE.SphereGeometry(0.05, 8, 8)
-  const noseMat = new THREE.MeshLambertMaterial({ color: 0x333333 })
+  const noseMat = new THREE.MeshStandardMaterial({ color: 0x333333 })
   const nose = new THREE.Mesh(noseGeo, noseMat)
   nose.position.set(0, 0.78, 0.48)
   teddy.add(nose)
 
   const eyeGeo = new THREE.SphereGeometry(0.05, 8, 8)
-  const eyeMat = new THREE.MeshLambertMaterial({ color: 0x111111 })
+  const eyeMat = new THREE.MeshStandardMaterial({ color: 0x111111 })
 
   const eyeL = new THREE.Mesh(eyeGeo, eyeMat)
   eyeL.position.set(-0.15, 0.9, 0.35)
@@ -132,7 +195,7 @@ function createRainbowStacker() {
   const colors = [COLORS.red, COLORS.orange, COLORS.yellow, COLORS.green, COLORS.blue, COLORS.purple]
 
   const poleGeo = new THREE.CylinderGeometry(0.05, 0.05, 1, 8)
-  const poleMat = new THREE.MeshLambertMaterial({ color: 0x6D4C41 })
+  const poleMat = new THREE.MeshStandardMaterial({ color: 0x6D4C41 })
   const pole = new THREE.Mesh(poleGeo, poleMat)
   pole.position.y = 0.5
   stacker.add(pole)
@@ -145,7 +208,7 @@ function createRainbowStacker() {
   colors.forEach((color, i) => {
     const radius = 0.35 - i * 0.05
     const ringGeo = new THREE.TorusGeometry(radius, 0.08, 8, 16)
-    const ringMat = new THREE.MeshLambertMaterial({ color })
+    const ringMat = new THREE.MeshStandardMaterial({ color })
     const ring = new THREE.Mesh(ringGeo, ringMat)
     ring.rotation.x = Math.PI / 2
     ring.position.y = 0.15 + i * 0.15
@@ -157,7 +220,7 @@ function createRainbowStacker() {
 
 function createStar() {
   const star = new THREE.Group()
-  const mat = new THREE.MeshLambertMaterial({ color: COLORS.yellow })
+  const mat = new THREE.MeshStandardMaterial({ color: COLORS.yellow })
 
   // Simple star shape using triangles
   const shape = new THREE.Shape()
@@ -189,7 +252,7 @@ function createStar() {
 
 function createDiamond() {
   const geo = new THREE.OctahedronGeometry(0.5)
-  const mat = new THREE.MeshLambertMaterial({ color: COLORS.cyan })
+  const mat = new THREE.MeshStandardMaterial({ color: COLORS.cyan })
   const diamond = new THREE.Mesh(geo, mat)
   diamond.scale.y = 1.5
   return diamond
@@ -211,8 +274,16 @@ function createRandomToy() {
 }
 
 function init() {
+  // Detect device capability up-front.
+  lowQuality =
+    window.matchMedia('(max-width: 768px)').matches ||
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  usePostprocessing = !lowQuality
+
   scene = new THREE.Scene()
   scene.background = null
+  // Fog gives depth and lets distant toys fade into the dark backdrop.
+  scene.fog = new THREE.Fog(0x0a1a2e, 18, 55)
 
   // Perspective camera for depth
   const aspect = container.value.clientWidth / container.value.clientHeight
@@ -222,7 +293,10 @@ function init() {
 
   renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
   renderer.setSize(container.value.clientWidth, container.value.clientHeight)
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, lowQuality ? 1.25 : 2))
+  renderer.outputColorSpace = THREE.SRGBColorSpace
+  renderer.toneMapping = THREE.ACESFilmicToneMapping
+  renderer.toneMappingExposure = 1.15
   container.value.appendChild(renderer.domElement)
 
   // Raycaster for mouse interaction
@@ -230,34 +304,44 @@ function init() {
   raycaster.params.Line = { threshold: 1 }
   mouse = new THREE.Vector2()
 
-  // Create toys spread across the viewport
-  const toyCount = 60
-  const spreadX = 35
-  const spreadY = 25
-  const spreadZ = 20
+  // Create toys spread across the viewport. Fewer hero toys, wider Z range
+  // so parallax actually reads as depth instead of a flat sticker layer.
+  const toyCount = lowQuality ? 14 : 25
+  const spreadX = 38
+  const spreadY = 26
+  const zNear = -25
+  const zFar = 5
 
   for (let i = 0; i < toyCount; i++) {
     const toy = createRandomToy()
 
-    // Distribute across the full background
     toy.position.set(
       (Math.random() - 0.5) * spreadX,
       (Math.random() - 0.5) * spreadY,
-      (Math.random() - 0.5) * spreadZ - 5
+      zNear + Math.random() * (zFar - zNear)
     )
 
-    // Random rotation
     toy.rotation.set(
       Math.random() * Math.PI * 2,
       Math.random() * Math.PI * 2,
       Math.random() * Math.PI * 2
     )
 
-    // Random scale variation
-    const scale = 0.6 + Math.random() * 0.8
+    const scale = 0.7 + Math.random() * 0.9
     toy.scale.set(scale, scale, scale)
 
-    // Store original properties for animation
+    // Tune all materials at once: slightly glossy plastic look, with a hint of
+    // emissive so bloom picks up the toy's own color rather than only specular.
+    toy.traverse((child) => {
+      if (child.isMesh && child.material && 'roughness' in child.material) {
+        child.material.roughness = 0.45
+        child.material.metalness = 0.08
+        if (child.material.color) {
+          child.material.emissive = child.material.color.clone().multiplyScalar(0.08)
+        }
+      }
+    })
+
     toy.userData = {
       originalScale: scale,
       originalPosition: toy.position.clone(),
@@ -276,26 +360,76 @@ function init() {
     scene.add(toy)
   }
 
-  // Lighting
-  const ambient = new THREE.AmbientLight(0xffffff, 0.5)
+  // Starfield on a spherical shell around the origin. Symmetric so the slow
+  // rotation in animate() spins them in place rather than sweeping them all
+  // to one side of the screen.
+  const starCount = lowQuality ? 120 : 260
+  const starGeo = new THREE.BufferGeometry()
+  const starPositions = new Float32Array(starCount * 3)
+  const starInnerR = 32
+  const starOuterR = 52
+  for (let i = 0; i < starCount; i++) {
+    // Uniform direction on a sphere via inverse CDF.
+    const u = Math.random()
+    const v = Math.random()
+    const theta = u * Math.PI * 2
+    const phi = Math.acos(2 * v - 1)
+    const r = starInnerR + Math.random() * (starOuterR - starInnerR)
+    starPositions[i * 3 + 0] = r * Math.sin(phi) * Math.cos(theta)
+    starPositions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta)
+    starPositions[i * 3 + 2] = r * Math.cos(phi)
+  }
+  starGeo.setAttribute('position', new THREE.BufferAttribute(starPositions, 3))
+  const starMat = new THREE.PointsMaterial({
+    color: 0x88ddff,
+    size: 0.18,
+    sizeAttenuation: true,
+    transparent: true,
+    opacity: 0.85,
+    depthWrite: false,
+  })
+  starfield = new THREE.Points(starGeo, starMat)
+  scene.add(starfield)
+
+  // Lighting tuned for PBR + bloom.
+  const ambient = new THREE.AmbientLight(0xffffff, 0.35)
   scene.add(ambient)
 
-  const dirLight = new THREE.DirectionalLight(0xffffff, 0.8)
+  const dirLight = new THREE.DirectionalLight(0xffffff, 1.1)
   dirLight.position.set(5, 10, 10)
   scene.add(dirLight)
 
-  const fillLight = new THREE.DirectionalLight(0x88ccff, 0.3)
+  const fillLight = new THREE.DirectionalLight(0x88ccff, 0.5)
   fillLight.position.set(-5, -5, 5)
   scene.add(fillLight)
 
-  // Accent lights for depth
-  const pinkLight = new THREE.PointLight(0xff69b4, 0.5, 30)
-  pinkLight.position.set(-10, 5, 5)
+  // Accent point lights: brighter so they create bloom-worthy highlights.
+  const pinkLight = new THREE.PointLight(0xff5dc8, 2.2, 35)
+  pinkLight.position.set(-12, 6, 6)
   scene.add(pinkLight)
 
-  const cyanLight = new THREE.PointLight(0x00ffff, 0.5, 30)
-  cyanLight.position.set(10, -5, 5)
+  const cyanLight = new THREE.PointLight(0x4dd9ff, 2.2, 35)
+  cyanLight.position.set(12, -6, 6)
   scene.add(cyanLight)
+
+  // Postprocessing pipeline.
+  if (usePostprocessing) {
+    const w = container.value.clientWidth
+    const h = container.value.clientHeight
+    composer = new EffectComposer(renderer)
+    composer.setSize(w, h)
+
+    composer.addPass(new RenderPass(scene, camera))
+
+    // UnrealBloomPass(resolution, strength, radius, threshold).
+    bloomPass = new UnrealBloomPass(new THREE.Vector2(w, h), 0.4, 0.55, 0.7)
+    composer.addPass(bloomPass)
+
+    finishPass = new ShaderPass(FinishShader)
+    composer.addPass(finishPass)
+
+    composer.addPass(new OutputPass())
+  }
 }
 
 function onMouseMove(event) {
@@ -314,11 +448,15 @@ function onMouseMove(event) {
 function onWindowResize() {
   if (!container.value || !camera || !renderer) return
 
-  const aspect = container.value.clientWidth / container.value.clientHeight
+  const w = container.value.clientWidth
+  const h = container.value.clientHeight
+  const aspect = w / h
   camera.aspect = aspect
   camera.updateProjectionMatrix()
 
-  renderer.setSize(container.value.clientWidth, container.value.clientHeight)
+  renderer.setSize(w, h)
+  if (composer) composer.setSize(w, h)
+  if (bloomPass) bloomPass.setSize(w, h)
 }
 
 function setEmissive(object, intensity, color = 0xffffff) {
@@ -363,23 +501,37 @@ function animate() {
 
     // Smooth highlight transition
     const targetIntensity = isNear ? 1 : 0
-    toy.userData.highlightIntensity += (targetIntensity - toy.userData.highlightIntensity) * 0.1
+    toy.userData.highlightIntensity += (targetIntensity - toy.userData.highlightIntensity) * 0.3
 
     // Apply highlight effect
     const intensity = toy.userData.highlightIntensity
     const targetScale = toy.userData.originalScale * (1 + intensity * 0.3)
     toy.scale.setScalar(toy.scale.x + (targetScale - toy.scale.x) * 0.1)
 
-    // Glow effect
-    setEmissive(toy, intensity * 0.5, 0x00ffff)
+    // Hover glow: high intensity so cyan reliably crosses the bloom threshold.
+    setEmissive(toy, intensity * 1.6, 0x00ffff)
   })
 
-  // Subtle camera movement based on mouse
-  camera.position.x += (mouseX * 2 - camera.position.x) * 0.02
-  camera.position.y += (mouseY * 2 - camera.position.y) * 0.02
+  // Slow camera breathing on top of mouse parallax, so the scene drifts even
+  // when the user is still. Mouse parallax still dominates.
+  const breatheX = Math.sin(time * 0.18) * 0.6
+  const breatheY = Math.cos(time * 0.12) * 0.4
+  camera.position.x += ((mouseX * 2 + breatheX) - camera.position.x) * 0.02
+  camera.position.y += ((mouseY * 2 + breatheY) - camera.position.y) * 0.02
   camera.lookAt(0, 0, 0)
 
-  renderer.render(scene, camera)
+  // Slow starfield drift for added parallax.
+  if (starfield) {
+    starfield.rotation.y = time * 0.005
+    starfield.rotation.x = Math.sin(time * 0.04) * 0.05
+  }
+
+  if (usePostprocessing && composer) {
+    if (finishPass) finishPass.uniforms.uTime.value = time
+    composer.render()
+  } else {
+    renderer.render(scene, camera)
+  }
 }
 
 onMounted(() => {
@@ -412,6 +564,21 @@ onUnmounted(() => {
     })
   })
   toys = []
+
+  if (starfield) {
+    starfield.geometry.dispose()
+    starfield.material.dispose()
+    starfield = null
+  }
+
+  if (composer) {
+    composer.passes.forEach((pass) => {
+      if (pass.dispose) pass.dispose()
+    })
+    composer = null
+    bloomPass = null
+    finishPass = null
+  }
 
   if (renderer) {
     renderer.dispose()
